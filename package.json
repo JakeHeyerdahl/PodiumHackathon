@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "intake:fixture": "tsx scripts/run-intake-fixture.ts",
+    "parser:fixtures": "tsx scripts/generate-parser-fixtures.ts",
+    "parser:run": "tsx scripts/run-parser.ts",
+    "parser:snapshot": "tsx scripts/update-parser-snapshots.ts",
+    "parser:test": "node --import tsx --test test/parser.test.ts"
   },
   "dependencies": {
     "next": "^16.1.6",
@@ -15,11 +20,15 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.1.6",
+    "pdfjs-dist": "^5.5.207",
+    "pdfkit": "^0.17.2",
     "tailwindcss": "^4.2.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

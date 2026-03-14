@@ -1,0 +1,20 @@
+{
+  "projectName": "Riverside Medical Office",
+  "submittalTitle": "081113 Hollow Metal Doors and Frames",
+  "sourceType": "upload",
+  "submitter": {
+    "company": "ABC Doors",
+    "contactName": "Jordan Lee",
+    "email": "jordan@abcdoors.example"
+  },
+  "documents": [
+    {
+      "fileName": "081113-cover-sheet.pdf",
+      "path": "files/081113-cover-sheet.pdf"
+    },
+    {
+      "fileName": "081113-product-data.pdf",
+      "path": "files/081113-product-data.pdf"
+    }
+  ]
+}

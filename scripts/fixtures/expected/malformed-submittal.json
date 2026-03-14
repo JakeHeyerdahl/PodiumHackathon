@@ -1,0 +1,149 @@
+{
+  "deviations": [],
+  "documentParses": [
+    {
+      "detectedTextLength": 160,
+      "documentId": "01-cover",
+      "documentType": "submittal_cover",
+      "extractionStatus": "parsed",
+      "fileName": "01-submittal-cover.pdf",
+      "issues": [],
+      "pageCount": 1,
+      "textCoverage": 1
+    },
+    {
+      "detectedTextLength": 0,
+      "documentId": "02-badfile",
+      "documentType": "unknown",
+      "extractionStatus": "failed",
+      "fileName": "02-corrupted.pdf",
+      "issues": [
+        {
+          "code": "pdf_load_failed",
+          "documentId": "02-badfile",
+          "message": "Invalid PDF structure.",
+          "severity": "error"
+        }
+      ],
+      "pageCount": 0,
+      "textCoverage": 0
+    }
+  ],
+  "extractedAttributes": [],
+  "issues": [
+    {
+      "code": "missing_required_document",
+      "message": "Required document \"o_and_m_manual\" is missing from the package.",
+      "severity": "warning"
+    },
+    {
+      "code": "missing_required_document",
+      "message": "Required document \"product_data\" is missing from the package.",
+      "severity": "warning"
+    },
+    {
+      "code": "missing_required_document",
+      "message": "Required document \"shop_drawing\" is missing from the package.",
+      "severity": "warning"
+    },
+    {
+      "code": "missing_required_document",
+      "message": "Required document \"warranty\" is missing from the package.",
+      "severity": "warning"
+    }
+  ],
+  "manufacturer": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Manufacturer Acme Air Systems",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "Acme Air Systems"
+  },
+  "missingDocuments": [
+    "o_and_m_manual",
+    "product_data",
+    "shop_drawing",
+    "warranty"
+  ],
+  "modelNumber": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Model AHU-9000",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "AHU-9000"
+  },
+  "parserSummary": {
+    "errorCount": 1,
+    "parsedDocumentCount": 2,
+    "reviewedAt": "2026-01-01T00:00:00.000Z",
+    "status": "needs_human_review",
+    "warningCount": 4
+  },
+  "productType": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Product Type Packaged Indoor Air Handling Unit",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "Packaged Indoor Air Handling Unit"
+  },
+  "revision": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Revision B",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "B"
+  },
+  "specSection": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Spec Section 23 73 13",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "23 73 13"
+  },
+  "trace": [
+    {
+      "message": "Received 2 document(s) for parsing.",
+      "step": "intake"
+    },
+    {
+      "documentId": "01-cover",
+      "message": "Extracted 160 characters and classified document as submittal_cover.",
+      "step": "extract"
+    },
+    {
+      "documentId": "01-cover",
+      "message": "Collected 5 field candidates and 0 attributes.",
+      "step": "normalize"
+    },
+    {
+      "documentId": "02-badfile",
+      "message": "Extracted 0 characters and classified document as unknown.",
+      "step": "extract"
+    },
+    {
+      "message": "Resolved document facts into a normalized ParsedSubmittal payload.",
+      "step": "compose"
+    }
+  ],
+  "unresolvedFields": []
+}

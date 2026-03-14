@@ -1,0 +1,213 @@
+{
+  "deviations": [],
+  "documentParses": [
+    {
+      "detectedTextLength": 160,
+      "documentId": "01-cover",
+      "documentType": "submittal_cover",
+      "extractionStatus": "parsed",
+      "fileName": "01-submittal-cover.pdf",
+      "issues": [],
+      "pageCount": 1,
+      "textCoverage": 1
+    },
+    {
+      "detectedTextLength": 97,
+      "documentId": "02-product",
+      "documentType": "product_data",
+      "extractionStatus": "parsed",
+      "fileName": "02-product-data.pdf",
+      "issues": [],
+      "pageCount": 1,
+      "textCoverage": 1
+    },
+    {
+      "detectedTextLength": 65,
+      "documentId": "03-drawing",
+      "documentType": "shop_drawing",
+      "extractionStatus": "parsed",
+      "fileName": "03-shop-drawing.pdf",
+      "issues": [],
+      "pageCount": 1,
+      "textCoverage": 1
+    }
+  ],
+  "extractedAttributes": [
+    {
+      "confidence": "high",
+      "name": "finish",
+      "sources": [
+        {
+          "documentId": "03-drawing",
+          "excerpt": "finish: Powder coat gray",
+          "fileName": "03-shop-drawing.pdf"
+        }
+      ],
+      "value": "Powder coat gray"
+    },
+    {
+      "confidence": "high",
+      "name": "voltage",
+      "sources": [
+        {
+          "documentId": "02-product",
+          "excerpt": "voltage: 480 V/3PH",
+          "fileName": "02-product-data.pdf"
+        }
+      ],
+      "value": "480 V/3PH"
+    }
+  ],
+  "issues": [
+    {
+      "code": "conflicting_values",
+      "field": "modelNumber",
+      "message": "Conflicting modelNumber values detected. Selected \"AHU-9000\" by precedence.",
+      "severity": "warning",
+      "sources": [
+        {
+          "documentId": "01-cover",
+          "excerpt": "Model AHU-9000",
+          "fileName": "01-submittal-cover.pdf"
+        },
+        {
+          "documentId": "02-product",
+          "excerpt": "Model AHU-9000",
+          "fileName": "02-product-data.pdf"
+        },
+        {
+          "documentId": "03-drawing",
+          "excerpt": "Model AHU-9010",
+          "fileName": "03-shop-drawing.pdf"
+        }
+      ]
+    },
+    {
+      "code": "conflicting_values",
+      "field": "revision",
+      "message": "Conflicting revision values detected. Selected \"B\" by precedence.",
+      "severity": "warning",
+      "sources": [
+        {
+          "documentId": "01-cover",
+          "excerpt": "Revision B",
+          "fileName": "01-submittal-cover.pdf"
+        },
+        {
+          "documentId": "02-product",
+          "excerpt": "Revision B",
+          "fileName": "02-product-data.pdf"
+        },
+        {
+          "documentId": "03-drawing",
+          "excerpt": "Revision C",
+          "fileName": "03-shop-drawing.pdf"
+        }
+      ]
+    }
+  ],
+  "manufacturer": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Manufacturer Acme Air Systems",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "Acme Air Systems"
+  },
+  "missingDocuments": [],
+  "modelNumber": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Model AHU-9000",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "AHU-9000"
+  },
+  "parserSummary": {
+    "errorCount": 0,
+    "parsedDocumentCount": 3,
+    "reviewedAt": "2026-01-01T00:00:00.000Z",
+    "status": "parsed_with_warnings",
+    "warningCount": 2
+  },
+  "productType": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Product Type Packaged Indoor Air Handling Unit",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "Packaged Indoor Air Handling Unit"
+  },
+  "revision": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Revision B",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "B"
+  },
+  "specSection": {
+    "confidence": "high",
+    "sources": [
+      {
+        "documentId": "01-cover",
+        "excerpt": "Spec Section 23 73 13",
+        "fileName": "01-submittal-cover.pdf"
+      }
+    ],
+    "value": "23 73 13"
+  },
+  "trace": [
+    {
+      "message": "Received 3 document(s) for parsing.",
+      "step": "intake"
+    },
+    {
+      "documentId": "01-cover",
+      "message": "Extracted 160 characters and classified document as submittal_cover.",
+      "step": "extract"
+    },
+    {
+      "documentId": "01-cover",
+      "message": "Collected 5 field candidates and 0 attributes.",
+      "step": "normalize"
+    },
+    {
+      "documentId": "02-product",
+      "message": "Extracted 97 characters and classified document as product_data.",
+      "step": "extract"
+    },
+    {
+      "documentId": "02-product",
+      "message": "Collected 3 field candidates and 1 attributes.",
+      "step": "normalize"
+    },
+    {
+      "documentId": "03-drawing",
+      "message": "Extracted 65 characters and classified document as shop_drawing.",
+      "step": "extract"
+    },
+    {
+      "documentId": "03-drawing",
+      "message": "Collected 2 field candidates and 1 attributes.",
+      "step": "normalize"
+    },
+    {
+      "message": "Resolved document facts into a normalized ParsedSubmittal payload.",
+      "step": "compose"
+    }
+  ],
+  "unresolvedFields": []
+}

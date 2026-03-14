@@ -1,0 +1,3 @@
+module.exports=[62243,a=>{a.n(a.i(49575))},43619,a=>{a.n(a.i(79962))},13718,a=>{a.n(a.i(85523))},18198,a=>{a.n(a.i(45518))},73348,a=>{"use strict";var b=a.i(7997);function c(){return(0,b.jsx)("main",{className:"shell",children:(0,b.jsxs)("section",{className:"card",children:[(0,b.jsx)("p",{className:"eyebrow",children:"PodiumHackathon"}),(0,b.jsx)("h1",{children:"Next.js project ready."}),(0,b.jsx)("p",{className:"copy",children:"Frontend scaffold is in place. Backend and agent orchestration can be added without wiring anything to the UI yet."})]})})}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=_2150a17c._.js.map
