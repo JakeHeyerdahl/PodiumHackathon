@@ -47,7 +47,7 @@ src/backend/
     intake.ts
     workflow.ts
   demo/
-    mockSubmittals.ts
+    realPdfFixtures.ts
 ```
 
 ## Mental Model
@@ -59,7 +59,7 @@ The backend is organized around workflow steps, with a small amount of adaptatio
 - `orchestrator/` wires the steps together into an end-to-end run.
 - feature folders hold step-specific implementation details.
 - `providers/` abstracts model access.
-- `demo/` exposes deterministic fixture helpers for tests and local runs.
+- `demo/` exposes retained real-PDF fixture helpers for tests and local runs.
 
 ## Workflow Order
 
@@ -155,7 +155,7 @@ Current split:
 
 ### `demo/`
 
-Deterministic backend fixtures for parser tests and local inspection.
+Retained real-PDF fixtures for parser tests and local inspection.
 
 ## Import Direction
 
@@ -174,7 +174,7 @@ Avoid convenience imports that skip a clearer public entrypoint when one already
 - New end-to-end coordination logic: add it in `orchestrator/`
 - Helper used by one domain only: keep it in that domain folder
 - Shared backend contract: add it in `schemas/`
-- Deterministic test fixture support: add it in `demo/` or `scripts/fixtures/`
+- Test fixture support should stay aligned with the retained files in `test-pdfs/`
 - Local verification CLI: add it in `scripts/`
 
 Avoid creating generic mechanic-based top-level folders like `utils/`, `helpers/`, or `normalizers/` unless the code is truly cross-domain and a feature-based home would be misleading.
@@ -183,4 +183,4 @@ Avoid creating generic mechanic-based top-level folders like `utils/`, `helpers/
 
 - The workflow state intentionally keeps a simpler serializable summary than some richer agent outputs.
 - The parser, completeness, comparison, and routing steps all support LLM-backed execution paths.
-- Deterministic parser coverage remains important for regression tests and snapshots.
+- Real-PDF parser coverage remains important for regression tests and debugging.

@@ -34,7 +34,7 @@ Implemented pieces:
 - workflow-step agents in `src/backend/agents/`
 - shared contracts in `src/backend/schemas/`
 - Anthropic and mock provider abstractions in `src/backend/providers/`
-- deterministic parser fixture generation and snapshots
+- retained real-PDF debugging fixtures in `test-pdfs/`
 - backend tests for parser, comparison, requirements, providers, routing flows, and workflow orchestration
 
 Still intentionally light:

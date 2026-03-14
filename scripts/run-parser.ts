@@ -1,21 +1,13 @@
 import path from "node:path";
 
 import { parseSubmittal, parseSubmittalDeterministic } from "../src/backend/agents/parser";
-import {
-  getMockFixture,
-  listMockFixtures,
-  type MockFixtureName,
-} from "../src/backend/demo/mockSubmittals";
 import type { IncomingDocument } from "../src/backend/schemas/workflow";
-import { generateParserFixtures } from "./generate-parser-fixtures";
 import { stableJsonStringify } from "./stable-json";
 
 function printUsage(): void {
   console.log("Usage:");
-  console.log("  npm run parser:run -- <fixture-name>");
   console.log("  npm run parser:run -- --files /abs/one.pdf,/abs/two.pdf");
   console.log("  npm run parser:run -- --files /abs/one.pdf --deterministic");
-  console.log(`Fixtures: ${listMockFixtures().join(", ")}`);
 }
 
 function parseCliDocuments(): IncomingDocument[] | null {
@@ -42,28 +34,16 @@ function parseCliDocuments(): IncomingDocument[] | null {
 }
 
 async function main(): Promise<void> {
-  await generateParserFixtures();
   const deterministic = process.argv.includes("--deterministic");
 
   const cliDocuments = parseCliDocuments();
-  let documents: IncomingDocument[];
-  let label: string;
-
-  if (cliDocuments) {
-    documents = cliDocuments;
-    label = "ad hoc files";
-  } else {
-    const fixtureName = process.argv[2] as MockFixtureName | undefined;
-    if (!fixtureName || !listMockFixtures().includes(fixtureName)) {
-      printUsage();
-      process.exitCode = 1;
-      return;
-    }
-
-    const fixture = getMockFixture(fixtureName);
-    documents = fixture.documents;
-    label = fixture.name;
+  if (!cliDocuments) {
+    printUsage();
+    process.exitCode = 1;
+    return;
   }
+  const documents: IncomingDocument[] = cliDocuments;
+  const label = "ad hoc files";
 
   const parsedSubmittal = deterministic
     ? await parseSubmittalDeterministic(documents)

@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { runRealPdfEvaluation } from "../src/backend/evals/runRealPdfEvaluation";
+import { loadLocalEnv } from "./load-local-env";
 import { stableJsonStringify } from "./stable-json";
 
 function readOption(flag: string): string | undefined {
@@ -24,6 +25,8 @@ function printUsage(): void {
 }
 
 async function main(): Promise<void> {
+  loadLocalEnv();
+
   const submittalValue = readOption("--submittal");
   if (!submittalValue) {
     printUsage();

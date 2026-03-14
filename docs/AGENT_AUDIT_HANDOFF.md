@@ -25,8 +25,8 @@ The frontend is still lightweight, but the backend path from intake through exec
   - validates payload shape and creates normalized document metadata
 - `src/backend/intake/extractPdf.ts`
   - extracts text and warnings from local PDFs
-- `fixtures/intake/*.json`
-  - fixture payloads for local intake and workflow runs
+- `test-pdfs/intake-*.json`
+  - retained intake payloads for local workflow runs
 - `scripts/run-intake-fixture.ts`
   - CLI harness for intake-only runs
 
@@ -46,8 +46,8 @@ The frontend is still lightweight, but the backend path from intake through exec
   - LLM-backed parser execution
 - `src/backend/parsing/reviewWithLlm.ts`
   - parser review and structured-output helpers
-- `src/backend/demo/mockSubmittals.ts`
-  - deterministic fixture access for parser tests
+- `src/backend/demo/realPdfFixtures.ts`
+  - retained real-PDF fixture access for parser and workflow tests
 
 ### Decision agents
 
@@ -90,10 +90,8 @@ The frontend is still lightweight, but the backend path from intake through exec
 - `test/routing.test.ts`
 - `test/provider.test.ts`
 - `test/agent-pipeline.test.ts`
-- `scripts/generate-parser-fixtures.ts`
-  - generates synthetic parser PDFs
-- `scripts/fixtures/expected/*.json`
-  - parser snapshot expectations
+- `test-pdfs/`
+  - retained real-PDF submittal and requirement files for debugging
 
 ## What Was Verified In This Audit
 

@@ -34,11 +34,8 @@ src/
     demo/                     deterministic parser fixture access
 scripts/
   run-*.ts                    local CLI entrypoints
-  generate-parser-fixtures.ts synthetic parser PDF generator
-  fixtures/                   expected parser snapshots and generated PDFs
-fixtures/intake/              intake payload fixtures
+test-pdfs/                    retained submittal, requirement, and intake payload files
 test/                         node:test coverage for agents and orchestrator
-test-pdfs/                    extra real-world parser regression PDFs
 docs/                         current project notes
 ```
 
@@ -48,12 +45,11 @@ docs/                         current project notes
 - `npm run lint` runs ESLint.
 - `npm run agents:test` runs the full backend test suite.
 - `npm run workflow:test` runs the workflow orchestrator tests.
-- `npm run parser:test` runs deterministic parser tests and snapshot checks.
-- `npm run parser:fixtures` regenerates synthetic parser PDFs.
-- `npm run workflow:run -- fixtures/intake/good-upload.json` runs the full workflow on an intake fixture.
-- `npm run parser:run -- good-submittal` runs the deterministic parser on one synthetic fixture.
-- `npm run parser:run:llm -- good-submittal` runs the LLM parser on one synthetic fixture.
-- `npm run parser:eval:llm` runs parser evals against expected checks.
+- `npm run parser:test` runs deterministic parser checks against the retained real PDFs.
+- `npm run workflow:run -- test-pdfs/intake-perfect.json` runs the full workflow on a retained real-PDF intake case.
+- `npm run parser:run -- --files test-pdfs/perfect.pdf --deterministic` runs the deterministic parser on one retained PDF.
+- `npm run parser:run:llm -- --files test-pdfs/perfect.pdf` runs the LLM parser on one retained PDF.
+- `npm run pdf:eval -- --submittal test-pdfs/perfect.pdf --requirements test-pdfs/requirement-1.pdf` runs the real PDF comparison path.
 - `npm run completeness:run` runs the completeness review script.
 - `npm run comparison:run` runs the comparison script.
 

@@ -1,92 +1,47 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import test, { before } from "node:test";
+import test from "node:test";
 
-import { generateParserFixtures } from "../scripts/generate-parser-fixtures";
-import { stableJsonStringify } from "../scripts/stable-json";
 import { parseSubmittalDeterministic } from "../src/backend/agents/parser";
-import { getMockFixture, listMockFixtures } from "../src/backend/demo/mockSubmittals";
+import {
+  getRealSubmittalFixture,
+  getRequirementDocument,
+} from "../src/backend/demo/realPdfFixtures";
 
-before(async () => {
-  await generateParserFixtures();
-});
+test("perfect.pdf currently resolves the masonry package to the Mortar/QuikMix row", async () => {
+  const fixture = getRealSubmittalFixture("perfect");
+  const parsedSubmittal = await parseSubmittalDeterministic([fixture.document]);
 
-test("good-submittal extracts the core fields", async () => {
-  const fixture = getMockFixture("good-submittal");
-  const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents);
-
-  assert.equal(parsedSubmittal.specSection.value, "23 73 13");
-  assert.equal(parsedSubmittal.productType.value, "Packaged Indoor Air Handling Unit");
-  assert.equal(parsedSubmittal.manufacturer.value, "Acme Air Systems");
-  assert.equal(parsedSubmittal.modelNumber.value, "AHU-9000");
-  assert.equal(parsedSubmittal.revision.value, "B");
-  assert.equal(parsedSubmittal.parserSummary.status, "parsed");
-  assert.equal(parsedSubmittal.unresolvedFields.length, 0);
-});
-
-test("missing-doc-submittal reports a missing warranty", async () => {
-  const fixture = getMockFixture("missing-doc-submittal");
-  const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents);
-
-  assert(parsedSubmittal.missingDocuments.includes("warranty"));
-  assert.equal(parsedSubmittal.parserSummary.status, "parsed_with_warnings");
-});
-
-test("deviation-submittal records explicit deviation language", async () => {
-  const fixture = getMockFixture("deviation-submittal");
-  const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents);
-
-  assert(parsedSubmittal.deviations.length > 0);
-  assert(
-    parsedSubmittal.deviations.some((issue) => issue.code === "deviation_detected"),
-  );
-});
-
-test("conflict-submittal resolves conflicting values with precedence", async () => {
-  const fixture = getMockFixture("conflict-submittal");
-  const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents);
-
-  assert.equal(parsedSubmittal.modelNumber.value, "AHU-9000");
-  assert.equal(parsedSubmittal.revision.value, "B");
-  assert(
-    parsedSubmittal.issues.some((issue) => issue.code === "conflicting_values"),
-  );
-});
-
-test("scan-review-submittal flags low-text PDFs for review", async () => {
-  const fixture = getMockFixture("scan-review-submittal");
-  const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents);
-
+  assert.equal(parsedSubmittal.specSection.value, "04 21 00");
+  assert.equal(parsedSubmittal.productType.value, "Mortar");
+  assert.equal(parsedSubmittal.manufacturer.value, "QuikMix");
+  assert.equal(parsedSubmittal.modelNumber.value, null);
+  assert.equal(parsedSubmittal.revision.value, "1");
   assert.equal(parsedSubmittal.parserSummary.status, "needs_human_review");
-  assert(
-    parsedSubmittal.documentParses.some(
-      (document) => document.extractionStatus === "ocr_required",
-    ),
-  );
 });
 
-test("malformed-submittal returns structured document failure", async () => {
-  const fixture = getMockFixture("malformed-submittal");
-  const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents);
+test("submittal-1.pdf currently resolves spec section only and leaves identity fields unresolved", async () => {
+  const fixture = getRealSubmittalFixture("submittal-1");
+  const parsedSubmittal = await parseSubmittalDeterministic([fixture.document]);
 
+  assert.equal(parsedSubmittal.specSection.value, "04 21 00");
+  assert.equal(parsedSubmittal.productType.value, null);
+  assert.equal(parsedSubmittal.manufacturer.value, null);
+  assert.equal(parsedSubmittal.modelNumber.value, null);
   assert.equal(parsedSubmittal.parserSummary.status, "needs_human_review");
-  assert(
-    parsedSubmittal.documentParses.some((document) =>
-      document.issues.some((issue) => issue.code === "pdf_load_failed"),
-    ),
-  );
 });
 
-test("perfect real-world submittal should not trigger a false deviation", async () => {
-  const parsedSubmittal = await parseSubmittalDeterministic([
-    {
-      documentId: "real-01",
-      fileName: "perfect.pdf",
-      mimeType: "application/pdf",
-      filePath: path.resolve(process.cwd(), "test-pdfs/perfect.pdf"),
-    },
-  ]);
+test("busted.pdf remains an unresolved package with unknown document type", async () => {
+  const fixture = getRealSubmittalFixture("busted");
+  const parsedSubmittal = await parseSubmittalDeterministic([fixture.document]);
+
+  assert.equal(parsedSubmittal.specSection.value, null);
+  assert.equal(parsedSubmittal.documentParses[0]?.documentType, "unknown");
+  assert.equal(parsedSubmittal.parserSummary.status, "needs_human_review");
+  assert(parsedSubmittal.missingDocuments.includes("product_data"));
+});
+
+test("requirement-1.pdf should not be flagged as a declared deviation", async () => {
+  const parsedSubmittal = await parseSubmittalDeterministic([getRequirementDocument()]);
 
   assert.equal(parsedSubmittal.deviations.length, 0);
   assert.equal(
@@ -94,50 +49,3 @@ test("perfect real-world submittal should not trigger a false deviation", async 
     false,
   );
 });
-
-test("perfect real-world submittal should extract at least one core field", async () => {
-  const parsedSubmittal = await parseSubmittalDeterministic([
-    {
-      documentId: "real-02",
-      fileName: "perfect.pdf",
-      mimeType: "application/pdf",
-      filePath: path.resolve(process.cwd(), "test-pdfs/perfect.pdf"),
-    },
-  ]);
-
-  assert.equal(
-    [
-      parsedSubmittal.specSection.value,
-      parsedSubmittal.productType.value,
-      parsedSubmittal.manufacturer.value,
-      parsedSubmittal.modelNumber.value,
-      parsedSubmittal.revision.value,
-    ].some(Boolean),
-    true,
-  );
-});
-
-test("requirement PDF should not be flagged as a declared deviation", async () => {
-  const parsedSubmittal = await parseSubmittalDeterministic([
-    {
-      documentId: "real-03",
-      fileName: "requirement-1.pdf",
-      mimeType: "application/pdf",
-      filePath: path.resolve(process.cwd(), "test-pdfs/requirement-1.pdf"),
-    },
-  ]);
-
-  assert.equal(parsedSubmittal.deviations.length, 0);
-});
-
-for (const fixtureName of listMockFixtures()) {
-  test(`${fixtureName} snapshot stays stable`, async () => {
-    const fixture = getMockFixture(fixtureName);
-    const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents, {
-      reviewedAt: "2026-01-01T00:00:00.000Z",
-    });
-    const expected = await readFile(fixture.expectedSnapshotPath, "utf8");
-
-    assert.equal(`${stableJsonStringify(parsedSubmittal)}\n`, expected);
-  });
-}

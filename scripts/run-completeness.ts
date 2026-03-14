@@ -4,13 +4,8 @@ import { loadEnvConfig } from "@next/env";
 import { runCompletenessAgent } from "../src/backend/agents/completeness";
 import { parseSubmittal } from "../src/backend/agents/parser";
 import { buildRequirementSet } from "../src/backend/agents/requirements";
-import {
-  getMockFixture,
-  listMockFixtures,
-  type MockFixtureName,
-} from "../src/backend/demo/mockSubmittals";
 import type { IncomingDocument } from "../src/backend/schemas/workflow";
-import { generateParserFixtures } from "./generate-parser-fixtures";
+import { loadLocalEnv } from "./load-local-env";
 import { stableJsonStringify } from "./stable-json";
 
 type CliOptions = {
@@ -24,13 +19,11 @@ loadEnvConfig(process.cwd());
 
 function printUsage(): void {
   console.log("Usage:");
-  console.log("  npm run completeness:run -- <fixture-name>");
   console.log("  npm run completeness:run -- --files /abs/one.pdf,/abs/two.pdf");
   console.log("Options:");
   console.log("  --project <name>            Project name for requirement reconstruction");
   console.log("  --title <title>             Submittal title override");
   console.log("  --model <model>             Override ANTHROPIC_COMPLETENESS_MODEL");
-  console.log(`Fixtures: ${listMockFixtures().join(", ")}`);
 }
 
 function readOption(flag: string): string | undefined {
@@ -82,36 +75,22 @@ function toRequirementInput(parsedSubmittal: Awaited<ReturnType<typeof parseSubm
 }
 
 async function main(): Promise<void> {
+  loadLocalEnv();
+
   if (hasFlag("--help")) {
     printUsage();
     return;
   }
 
-  await generateParserFixtures();
-
   const options = parseOptions();
-  const fixtureName = process.argv[2] as MockFixtureName | undefined;
-
-  let documents: IncomingDocument[];
-  let label: string;
-  let submittalTitle: string;
-
-  if (options.files) {
-    documents = parseCliDocuments(options.files);
-    label = "ad hoc files";
-    submittalTitle = options.submittalTitle ?? "Ad Hoc Submittal";
-  } else {
-    if (!fixtureName || !listMockFixtures().includes(fixtureName)) {
-      printUsage();
-      process.exitCode = 1;
-      return;
-    }
-
-    const fixture = getMockFixture(fixtureName);
-    documents = fixture.documents;
-    label = fixture.name;
-    submittalTitle = options.submittalTitle ?? fixture.description;
+  if (!options.files) {
+    printUsage();
+    process.exitCode = 1;
+    return;
   }
+  const documents: IncomingDocument[] = parseCliDocuments(options.files);
+  const label = "ad hoc files";
+  const submittalTitle = options.submittalTitle ?? "Ad Hoc Submittal";
 
   const parsedSubmittal = await parseSubmittal(documents, {
     mode: "llm",

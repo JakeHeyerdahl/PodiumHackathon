@@ -1,22 +1,14 @@
 import path from "node:path";
 
 import { parseSubmittal } from "../src/backend/agents/parser";
-import {
-  getMockFixture,
-  listMockFixtures,
-  type MockFixtureName,
-} from "../src/backend/demo/mockSubmittals";
 import type { IncomingDocument } from "../src/backend/schemas/workflow";
-import { generateParserFixtures } from "./generate-parser-fixtures";
+import { loadLocalEnv } from "./load-local-env";
 import { stableJsonStringify } from "./stable-json";
 
 function printUsage(): void {
   console.log("Usage:");
-  console.log("  npm run parser:run:llm -- <fixture-name>");
-  console.log("  npm run parser:run:llm -- --all");
   console.log("  npm run parser:run:llm -- --files /abs/one.pdf,/abs/two.pdf");
-  console.log("  npm run parser:run:llm -- <fixture-name> --model claude-sonnet-4-5-20250929");
-  console.log(`Fixtures: ${listMockFixtures().join(", ")}`);
+  console.log("  npm run parser:run:llm -- --files /abs/one.pdf --model claude-sonnet-4-5-20250929");
 }
 
 function requireApiKey(): void {
@@ -78,35 +70,16 @@ async function runFixture(
 }
 
 async function main(): Promise<void> {
+  loadLocalEnv();
   requireApiKey();
-  await generateParserFixtures();
-
   const model = parseModelArg();
   const cliDocuments = parseCliDocuments();
-  const runAllFixtures = process.argv.includes("--all");
-
-  if (cliDocuments) {
-    await runFixture("ad hoc files", cliDocuments, model);
-    return;
-  }
-
-  if (runAllFixtures) {
-    for (const fixtureName of listMockFixtures()) {
-      const fixture = getMockFixture(fixtureName);
-      await runFixture(fixture.name, fixture.documents, model);
-    }
-    return;
-  }
-
-  const fixtureName = process.argv[2] as MockFixtureName | undefined;
-  if (!fixtureName || !listMockFixtures().includes(fixtureName)) {
+  if (!cliDocuments) {
     printUsage();
     process.exitCode = 1;
     return;
   }
-
-  const fixture = getMockFixture(fixtureName);
-  await runFixture(fixture.name, fixture.documents, model);
+  await runFixture("ad hoc files", cliDocuments, model);
 }
 
 main().catch((error) => {
