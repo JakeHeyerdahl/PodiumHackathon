@@ -50,12 +50,28 @@ export type CompletenessRationale = {
   facts: string[];
 };
 
+export type CompletenessConfidence = "high" | "medium" | "low";
+
+export type CompletenessReviewMode = "llm" | "deterministic_fallback";
+
+export type CompletenessEvidenceItem = {
+  requirementKey: string;
+  requirementLabel: string;
+  decision: "present" | "missing" | "ambiguous";
+  matchedDocumentIds: string[];
+  reasoning: string;
+};
+
 export type CompletenessResult = {
   status: CompletenessStatus;
   isReviewable: boolean;
   missingDocuments: string[];
   ambiguousDocuments: string[];
   rationale: CompletenessRationale;
+  confidence?: CompletenessConfidence;
+  reviewMode?: CompletenessReviewMode;
+  model?: string;
+  evidence?: CompletenessEvidenceItem[];
 };
 
 export type ComparisonItem = {

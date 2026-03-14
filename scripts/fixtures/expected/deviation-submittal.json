@@ -145,8 +145,23 @@
     },
     {
       "documentId": "01-cover",
-      "message": "Extracted 160 characters and classified document as submittal_cover.",
+      "message": "Extracted 160 characters from 01-submittal-cover.pdf.",
       "step": "extract"
+    },
+    {
+      "documentId": "02-product",
+      "message": "Extracted 86 characters from 02-product-data.pdf.",
+      "step": "extract"
+    },
+    {
+      "documentId": "03-deviation",
+      "message": "Extracted 152 characters from 03-deviation-letter.pdf.",
+      "step": "extract"
+    },
+    {
+      "documentId": "01-cover",
+      "message": "Assigned heuristic document type submittal_cover.",
+      "step": "classify"
     },
     {
       "documentId": "01-cover",
@@ -155,8 +170,8 @@
     },
     {
       "documentId": "02-product",
-      "message": "Extracted 86 characters and classified document as product_data.",
-      "step": "extract"
+      "message": "Assigned heuristic document type product_data.",
+      "step": "classify"
     },
     {
       "documentId": "02-product",
@@ -165,8 +180,8 @@
     },
     {
       "documentId": "03-deviation",
-      "message": "Extracted 152 characters and classified document as deviation_letter.",
-      "step": "extract"
+      "message": "Assigned heuristic document type deviation_letter.",
+      "step": "classify"
     },
     {
       "documentId": "03-deviation",
@@ -174,7 +189,7 @@
       "step": "normalize"
     },
     {
-      "message": "Resolved document facts into a normalized ParsedSubmittal payload.",
+      "message": "Resolved deterministic document facts into a normalized ParsedSubmittal payload.",
       "step": "compose"
     }
   ],

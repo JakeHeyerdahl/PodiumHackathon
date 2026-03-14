@@ -147,8 +147,28 @@
     },
     {
       "documentId": "01-cover",
-      "message": "Extracted 251 characters and classified document as submittal_cover.",
+      "message": "Extracted 251 characters from 01-submittal-cover.pdf.",
       "step": "extract"
+    },
+    {
+      "documentId": "02-product",
+      "message": "Extracted 105 characters from 02-product-data.pdf.",
+      "step": "extract"
+    },
+    {
+      "documentId": "03-drawing",
+      "message": "Extracted 40 characters from 03-shop-drawing.pdf.",
+      "step": "extract"
+    },
+    {
+      "documentId": "04-manual",
+      "message": "Extracted 67 characters from 04-operations-manual.pdf.",
+      "step": "extract"
+    },
+    {
+      "documentId": "01-cover",
+      "message": "Assigned heuristic document type submittal_cover.",
+      "step": "classify"
     },
     {
       "documentId": "01-cover",
@@ -157,8 +177,8 @@
     },
     {
       "documentId": "02-product",
-      "message": "Extracted 105 characters and classified document as product_data.",
-      "step": "extract"
+      "message": "Assigned heuristic document type product_data.",
+      "step": "classify"
     },
     {
       "documentId": "02-product",
@@ -167,8 +187,8 @@
     },
     {
       "documentId": "03-drawing",
-      "message": "Extracted 40 characters and classified document as shop_drawing.",
-      "step": "extract"
+      "message": "Assigned heuristic document type shop_drawing.",
+      "step": "classify"
     },
     {
       "documentId": "03-drawing",
@@ -177,8 +197,8 @@
     },
     {
       "documentId": "04-manual",
-      "message": "Extracted 67 characters and classified document as o_and_m_manual.",
-      "step": "extract"
+      "message": "Assigned heuristic document type o_and_m_manual.",
+      "step": "classify"
     },
     {
       "documentId": "04-manual",
@@ -186,7 +206,7 @@
       "step": "normalize"
     },
     {
-      "message": "Resolved document facts into a normalized ParsedSubmittal payload.",
+      "message": "Resolved deterministic document facts into a normalized ParsedSubmittal payload.",
       "step": "compose"
     }
   ],

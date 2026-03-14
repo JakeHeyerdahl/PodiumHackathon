@@ -1,3 +1,11 @@
+import { z } from "zod";
+
+import {
+  createLlmProvider,
+  type CreateLlmProviderOptions,
+  type LlmProvider,
+} from "../providers";
+
 type ComparisonPrimitive = string | number | boolean;
 
 export type ComparisonValue =
@@ -46,6 +54,14 @@ export type ComparisonResult = {
   };
 };
 
+export type RunComparisonAgentInput = {
+  parsedSubmittal: ParsedSubmittal;
+  requirementSet: RequirementSet;
+  model?: string;
+  allowDeterministicFallback?: boolean;
+  llmProvider?: LlmProvider;
+} & CreateLlmProviderOptions;
+
 const TOP_LEVEL_FIELDS = [
   "specSection",
   "productType",
@@ -53,6 +69,77 @@ const TOP_LEVEL_FIELDS = [
   "modelNumber",
   "revision",
 ] as const;
+
+const comparisonResultSchema = z.object({
+  status: z.enum(["compliant", "deviation_detected", "unclear"]),
+  matches: z.array(
+    z.object({
+      field: z.string(),
+      expected: z.union([
+        z.string(),
+        z.number(),
+        z.boolean(),
+        z.array(z.union([z.string(), z.number(), z.boolean()])),
+        z.null(),
+      ]),
+      actual: z.union([
+        z.string(),
+        z.number(),
+        z.boolean(),
+        z.array(z.union([z.string(), z.number(), z.boolean()])),
+        z.null(),
+      ]),
+      note: z.string().optional(),
+    }),
+  ),
+  mismatches: z.array(
+    z.object({
+      field: z.string(),
+      expected: z.union([
+        z.string(),
+        z.number(),
+        z.boolean(),
+        z.array(z.union([z.string(), z.number(), z.boolean()])),
+        z.null(),
+      ]),
+      actual: z.union([
+        z.string(),
+        z.number(),
+        z.boolean(),
+        z.array(z.union([z.string(), z.number(), z.boolean()])),
+        z.null(),
+      ]),
+      note: z.string().optional(),
+    }),
+  ),
+  unclearItems: z.array(
+    z.object({
+      field: z.string(),
+      expected: z.union([
+        z.string(),
+        z.number(),
+        z.boolean(),
+        z.array(z.union([z.string(), z.number(), z.boolean()])),
+        z.null(),
+      ]),
+      actual: z.union([
+        z.string(),
+        z.number(),
+        z.boolean(),
+        z.array(z.union([z.string(), z.number(), z.boolean()])),
+        z.null(),
+      ]),
+      note: z.string().optional(),
+    }),
+  ),
+  summary: z.object({
+    matchCount: z.number().int().nonnegative(),
+    mismatchCount: z.number().int().nonnegative(),
+    unclearCount: z.number().int().nonnegative(),
+  }),
+});
+
+type StructuredComparisonResult = z.infer<typeof comparisonResultSchema>;
 
 function isBlankValue(value: ComparisonValue): boolean {
   if (value === null || value === undefined) {
@@ -79,7 +166,7 @@ function normalizePrimitive(value: ComparisonPrimitive): string {
 }
 
 function normalizeValue(value: ComparisonValue): string | string[] | null {
-  if (isBlankValue(value)) {
+  if (value === null || value === undefined) {
     return null;
   }
 
@@ -90,7 +177,11 @@ function normalizeValue(value: ComparisonValue): string | string[] | null {
       .sort();
   }
 
-  return normalizePrimitive(value);
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return normalizePrimitive(value);
+  }
+
+  return null;
 }
 
 function valuesMatch(expected: ComparisonValue, actual: ComparisonValue): boolean {
@@ -127,6 +218,48 @@ function buildItem(
     expected: expected ?? null,
     actual: actual ?? null,
     ...(note ? { note } : {}),
+  };
+}
+
+function buildComparisonPromptPayload(
+  parsedSubmittal: ParsedSubmittal,
+  requirementSet: RequirementSet,
+) {
+  return {
+    task:
+      "Compare the parsed submittal against the requirement set and classify each requirement as match, mismatch, or unclear.",
+    rules: [
+      "Evaluate technical comparison, not completeness routing.",
+      "A mismatch means the submitted evidence clearly conflicts with a required value.",
+      "An unclear item means the required value or submitted evidence is missing, blank, weak, or not specific enough to determine compliance.",
+      "Declared deviations should be treated as mismatches.",
+      "Only return compliant when there are no mismatches and no unclear items.",
+      "Return summary counts that exactly match the lengths of matches, mismatches, and unclearItems.",
+      "Do not invent fields outside the provided parsedSubmittal and requirementSet.",
+    ],
+    parsedSubmittal,
+    requirementSet,
+  };
+}
+
+function toStructuredComparisonItem(item: ComparisonItem) {
+  return {
+    field: item.field,
+    expected: item.expected ?? null,
+    actual: item.actual ?? null,
+    ...(item.note ? { note: item.note } : {}),
+  };
+}
+
+function toStructuredComparisonResult(
+  result: ComparisonResult,
+): StructuredComparisonResult {
+  return {
+    status: result.status,
+    matches: result.matches.map(toStructuredComparisonItem),
+    mismatches: result.mismatches.map(toStructuredComparisonItem),
+    unclearItems: result.unclearItems.map(toStructuredComparisonItem),
+    summary: result.summary,
   };
 }
 
@@ -214,4 +347,53 @@ export function runTechnicalComparisonAgent(
       unclearCount: unclearItems.length,
     },
   };
+}
+
+export async function runComparisonAgent(
+  input: RunComparisonAgentInput,
+): Promise<ComparisonResult> {
+  const deterministicResult = runTechnicalComparisonAgent(
+    input.parsedSubmittal,
+    input.requirementSet,
+  );
+  const structuredDeterministicResult =
+    toStructuredComparisonResult(deterministicResult);
+  const llmProvider =
+    input.llmProvider ??
+    createLlmProvider({
+      provider: input.provider,
+      anthropicApiKey: input.anthropicApiKey,
+      anthropicModel: input.anthropicModel,
+      allowMockFallback: input.allowMockFallback,
+    });
+
+  try {
+    const response = await llmProvider.generateObject({
+      instructions:
+        "You are a construction submittal technical comparison agent. Return strict structured JSON and classify evidence conservatively when compliance is uncertain.",
+      input: JSON.stringify(
+        buildComparisonPromptPayload(
+          input.parsedSubmittal,
+          input.requirementSet,
+        ),
+      ),
+      schema: comparisonResultSchema,
+      schemaName: "comparison_result",
+      model:
+        input.model ??
+        input.anthropicModel ??
+        process.env.ANTHROPIC_COMPARISON_MODEL ??
+        process.env.ANTHROPIC_MODEL,
+      maxOutputTokens: 1800,
+      fallbackObject: structuredDeterministicResult,
+    });
+
+    return response.object;
+  } catch (error) {
+    if (!input.allowDeterministicFallback) {
+      throw error;
+    }
+
+    return deterministicResult;
+  }
 }

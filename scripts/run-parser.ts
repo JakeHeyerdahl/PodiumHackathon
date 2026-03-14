@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { parseSubmittal } from "../src/backend/agents/parser";
+import { parseSubmittalDeterministic } from "../src/backend/agents/parser";
 import {
   getMockFixture,
   listMockFixtures,
@@ -63,7 +63,7 @@ async function main(): Promise<void> {
     label = fixture.name;
   }
 
-  const parsedSubmittal = await parseSubmittal(documents);
+  const parsedSubmittal = await parseSubmittalDeterministic(documents);
   console.log(`Parser fixture: ${label}`);
   console.log(`Status: ${parsedSubmittal.parserSummary.status}`);
   console.log(`Documents: ${parsedSubmittal.parserSummary.parsedDocumentCount}`);

@@ -564,7 +564,9 @@ function normalizeToken(value?: string | null): string {
 }
 
 function normalizeAttributeKey(value: string): string {
-  const token = normalizeToken(value);
+  const token = normalizeToken(
+    value.replace(/([a-z0-9])([A-Z])/g, "$1_$2"),
+  );
 
   if (token === "model_number" || token === "modelnumber") {
     return "modelNumber";

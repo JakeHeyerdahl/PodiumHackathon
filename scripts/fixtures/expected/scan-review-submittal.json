@@ -127,8 +127,18 @@
     },
     {
       "documentId": "01-cover",
-      "message": "Extracted 160 characters and classified document as submittal_cover.",
+      "message": "Extracted 160 characters from 01-submittal-cover.pdf.",
       "step": "extract"
+    },
+    {
+      "documentId": "02-product",
+      "message": "Extracted 9 characters from 02-low-text-scan.pdf.",
+      "step": "extract"
+    },
+    {
+      "documentId": "01-cover",
+      "message": "Assigned heuristic document type submittal_cover.",
+      "step": "classify"
     },
     {
       "documentId": "01-cover",
@@ -137,8 +147,8 @@
     },
     {
       "documentId": "02-product",
-      "message": "Extracted 9 characters and classified document as unknown.",
-      "step": "extract"
+      "message": "Assigned heuristic document type unknown.",
+      "step": "classify"
     },
     {
       "documentId": "02-product",
@@ -146,7 +156,7 @@
       "step": "normalize"
     },
     {
-      "message": "Resolved document facts into a normalized ParsedSubmittal payload.",
+      "message": "Resolved deterministic document facts into a normalized ParsedSubmittal payload.",
       "step": "compose"
     }
   ],

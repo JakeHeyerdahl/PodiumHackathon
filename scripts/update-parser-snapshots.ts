@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { parseSubmittal } from "../src/backend/agents/parser";
+import { parseSubmittalDeterministic } from "../src/backend/agents/parser";
 import { getMockFixture, listMockFixtures } from "../src/backend/demo/mockSubmittals";
 import { generateParserFixtures } from "./generate-parser-fixtures";
 import { stableJsonStringify } from "./stable-json";
@@ -14,7 +14,7 @@ async function main(): Promise<void> {
 
   for (const fixtureName of listMockFixtures()) {
     const fixture = getMockFixture(fixtureName);
-    const parsedSubmittal = await parseSubmittal(fixture.documents, {
+    const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents, {
       reviewedAt: "2026-01-01T00:00:00.000Z",
     });
     await writeFile(

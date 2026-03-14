@@ -217,7 +217,7 @@ unless they live inside a clearly named feature folder where the context is alre
 This backend is still mid-sprint. A few important areas are not fully built yet:
 
 - no orchestrator module yet
-- no provider layer yet
+- provider abstractions exist, but the workflow is only partially wired to them
 - no demo API route yet
 - workflow contracts are still evolving between agents
 

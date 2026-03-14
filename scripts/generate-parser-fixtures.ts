@@ -23,7 +23,7 @@ async function writePdf(outputPath: string, lines: string[]): Promise<void> {
     });
     const chunks: Buffer[] = [];
 
-    doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    doc.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
     doc.on("end", async () => {
       try {
         await writeFile(outputPath, Buffer.concat(chunks));
