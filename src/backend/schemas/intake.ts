@@ -34,6 +34,7 @@ export type RawFixtureDocument = {
 
 export type UploadIntakePayload = {
   projectName?: string;
+  submittalTitle?: string;
   sourceType?: "upload";
   documents?: RawFixtureDocument[];
 };
