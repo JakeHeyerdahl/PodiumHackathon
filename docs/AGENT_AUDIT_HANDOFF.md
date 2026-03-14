@@ -20,7 +20,7 @@ The frontend is still lightweight, but the backend path from intake through exec
 ### Intake workflow
 
 - `src/backend/agents/intake.ts`
-  - orchestrates payload normalization and PDF extraction
+  - orchestrates payload normalization and PDF extraction for upload and mock-email sources
 - `src/backend/intake/normalize.ts`
   - validates payload shape and creates normalized document metadata
 - `src/backend/intake/extractPdf.ts`
@@ -29,6 +29,21 @@ The frontend is still lightweight, but the backend path from intake through exec
   - retained intake payloads for local workflow runs
 - `scripts/run-intake-fixture.ts`
   - CLI harness for intake-only runs
+
+### Mock notification loop
+
+- `src/backend/notifications/email.ts`
+  - writes mock outbound executive emails to a local inbox file
+- `src/backend/notifications/inboundEmail.ts`
+  - stores mock inbound contractor replies and attachment metadata
+- `scripts/receive-mock-email.ts`
+  - appends a contractor reply with attachments to the inbound inbox
+- `scripts/show-mock-email-inbox.ts`
+  - views the outbound inbox
+- `scripts/show-mock-inbound-email-inbox.ts`
+  - views the inbound inbox
+- `scripts/run-workflow-email.ts`
+  - runs the full workflow using the latest mock inbound email attachment
 
 ### Parser workflow
 
@@ -66,6 +81,7 @@ The frontend is still lightweight, but the backend path from intake through exec
 
 - `src/backend/orchestrator/runWorkflow.ts`
   - runs intake -> parser -> requirements -> completeness -> comparison -> routing -> executive
+  - dispatches a mock executive return email when the package is returned to the subcontractor
   - returns both workflow-facing state and richer intermediate artifacts
 - `scripts/run-workflow.ts`
   - local CLI entrypoint for full workflow runs
@@ -85,6 +101,10 @@ The frontend is still lightweight, but the backend path from intake through exec
   - deterministic parser and snapshot coverage
 - `test/workflow-orchestrator.test.ts`
   - end-to-end workflow happy path and deviation path
+- `test/executive.test.ts`
+  - executive return notification coverage
+- `test/inbound-email.test.ts`
+  - mock inbound email to intake coverage
 - `test/comparison.test.ts`
 - `test/requirements.test.ts`
 - `test/routing.test.ts`
@@ -133,6 +153,15 @@ Optional model env vars:
 ### 3. The frontend is not the center of gravity yet
 
 The application shell exists, but most meaningful functionality is still exercised through backend scripts and tests rather than through a user-facing UI.
+
+### 4. Contractor email is mocked, not a real integration
+
+Return notices and contractor replies are intentionally local-file mocks today:
+
+- outbound inbox: `tmp/mock-email-inbox.jsonl`
+- inbound inbox: `tmp/mock-inbound-email-inbox.jsonl`
+
+That loop is useful for testing workflow behavior, but it is not a production email integration.
 
 ## Recommended Next Steps
 

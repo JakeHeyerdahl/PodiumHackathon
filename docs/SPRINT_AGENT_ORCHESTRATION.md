@@ -32,6 +32,7 @@ Implemented pieces:
 
 - workflow orchestrator in `src/backend/orchestrator/runWorkflow.ts`
 - workflow-step agents in `src/backend/agents/`
+- mock outbound and inbound email helpers in `src/backend/notifications/`
 - shared contracts in `src/backend/schemas/`
 - Anthropic and mock provider abstractions in `src/backend/providers/`
 - retained real-PDF debugging fixtures in `test-pdfs/`
@@ -101,7 +102,13 @@ Some agents produce richer internal types than the workflow state stores. The or
 6. Routing
 7. Executive
 
-This order is exercised by `npm run workflow:run` and `npm run workflow:test`.
+This order is exercised by `npm run workflow:run`, `npm run workflow:run:email`, and `npm run workflow:test`.
+
+The local mock email loop now looks like:
+
+1. workflow returns a package and writes a mock outbound notice
+2. a mock contractor reply is appended to the inbound inbox with one or more attachments
+3. `workflow:run:email` consumes the latest inbound reply and re-enters the workflow through intake
 
 ## Near-Term Priorities
 

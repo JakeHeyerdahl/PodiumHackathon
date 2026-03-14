@@ -8,13 +8,13 @@ The frontend is currently minimal. Most of the active work lives in `src/backend
 
 The backend models a bounded submittal-review workflow:
 
-1. intake normalizes an uploaded package
+1. intake extracts text from uploaded or emailed PDF packages
 2. parser extracts structured facts from PDFs
 3. requirements reconstruct expected spec and document requirements
 4. completeness decides whether the package is reviewable
 5. comparison evaluates compliance vs requirements
 6. routing picks the next destination
-7. executive makes the final workflow call
+7. executive makes the final workflow call and issues mock return notices when needed
 
 The main orchestrator lives at `src/backend/orchestrator/runWorkflow.ts`.
 
@@ -26,6 +26,7 @@ src/
   backend/
     agents/                   workflow steps
     orchestrator/             end-to-end workflow runner
+    notifications/            mock outbound/inbound email helpers
     parsing/                  parser internals
     completeness/             completeness review helpers
     intake/                   intake normalization and PDF extraction
@@ -47,15 +48,25 @@ docs/                         current project notes
 - `npm run workflow:test` runs the workflow orchestrator tests.
 - `npm run parser:test` runs deterministic parser checks against the retained real PDFs.
 - `npm run workflow:run -- test-pdfs/intake-perfect.json` runs the full workflow on a retained real-PDF intake case.
+- `npm run workflow:run:email` runs the full workflow on the latest mock inbound contractor email.
 - `npm run parser:run -- --files test-pdfs/perfect.pdf --deterministic` runs the deterministic parser on one retained PDF.
 - `npm run parser:run:llm -- --files test-pdfs/perfect.pdf` runs the LLM parser on one retained PDF.
 - `npm run pdf:eval -- --submittal test-pdfs/perfect.pdf --requirements test-pdfs/requirement-1.pdf` runs the real PDF comparison path.
 - `npm run completeness:run` runs the completeness review script.
 - `npm run comparison:run` runs the comparison script.
+- `npm run email:inbox` shows the mock outbound executive email inbox.
+- `npm run email:receive -- --attachment test-pdfs/perfect.pdf` appends a mock inbound contractor reply.
+- `npm run email:inbox:inbound` shows the mock inbound contractor inbox.
 
 ## Environment
 
 Some scripts load `.env.local` automatically through `scripts/load-local-env.ts`.
+
+The workflow runners also support a mock email loop:
+
+- outbound executive return notices are written to `tmp/mock-email-inbox.jsonl`
+- inbound contractor replies are written to `tmp/mock-inbound-email-inbox.jsonl`
+- `workflow:run:email` consumes the latest inbound email attachment as intake input
 
 LLM-backed commands expect:
 
@@ -76,6 +87,8 @@ If you only want deterministic parser coverage, you do not need an API key.
 - The backend orchestrator is implemented and tested.
 - Parser fixtures and snapshots are in place for deterministic coverage.
 - Completeness, comparison, and routing support LLM-backed review flows.
+- Executive return-to-subcontractor decisions now generate mock email notifications.
+- Intake can now consume mock inbound contractor email replies with attachments.
 - The frontend is still a lightweight shell rather than a full product UI.
 
 ## Related Docs

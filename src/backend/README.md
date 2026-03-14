@@ -24,6 +24,9 @@ src/backend/
     comparison.ts
     routing.ts
     executive.ts
+  notifications/
+    email.ts
+    inboundEmail.ts
   orchestrator/
     runWorkflow.ts
   intake/
@@ -58,6 +61,7 @@ The backend is organized around workflow steps, with a small amount of adaptatio
 - `agents/` owns the public workflow steps.
 - `orchestrator/` wires the steps together into an end-to-end run.
 - feature folders hold step-specific implementation details.
+- `notifications/` owns mock outbound and inbound email behavior for local workflow loops.
 - `providers/` abstracts model access.
 - `demo/` exposes retained real-PDF fixture helpers for tests and local runs.
 
@@ -76,6 +80,7 @@ The orchestrated flow is:
 `orchestrator/runWorkflow.ts` is the current end-to-end entrypoint. It:
 
 - runs intake against fixture-backed uploads
+- supports intake from mock inbound email attachments as well as direct fixture uploads
 - converts accepted PDFs into parser input
 - runs parser, requirements, completeness, comparison, routing, and executive in order
 - stores workflow-facing summaries in `WorkflowState`
@@ -110,9 +115,19 @@ Upload normalization and PDF preparation for intake.
 
 Current responsibilities:
 
-- validating and normalizing upload payloads
+- validating and normalizing upload and mock-email payloads
 - assigning run IDs and document metadata
 - extracting raw PDF text and warnings during intake
+
+### `notifications/`
+
+Mock email loop support.
+
+Current responsibilities:
+
+- writing executive return notices to a local outbound inbox file
+- storing mock inbound contractor replies with attachments
+- adapting mock inbound replies into intake-ready document references
 
 ### `parsing/`
 
@@ -183,4 +198,5 @@ Avoid creating generic mechanic-based top-level folders like `utils/`, `helpers/
 
 - The workflow state intentionally keeps a simpler serializable summary than some richer agent outputs.
 - The parser, completeness, comparison, and routing steps all support LLM-backed execution paths.
+- The executive step can emit a mock return email and the intake step can consume a mock inbound reply.
 - Real-PDF parser coverage remains important for regression tests and debugging.

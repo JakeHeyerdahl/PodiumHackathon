@@ -6,19 +6,50 @@ import type {
 } from "../schemas/intake";
 import { extractPdfDocument } from "../intake/extractPdf";
 import { normalizeIntakePayload } from "../intake/normalize";
+import {
+  getLatestMockInboundEmail,
+  getMockInboundEmailById,
+  toFixtureDocuments,
+} from "../notifications/inboundEmail";
+
+async function resolveEmailPayload(
+  input: UploadIntakePayload,
+): Promise<UploadIntakePayload> {
+  if (input.sourceType !== "email") {
+    return input;
+  }
+
+  const message = input.emailId
+    ? await getMockInboundEmailById(input.emailId, input.mailboxPath)
+    : await getLatestMockInboundEmail(input.mailboxPath);
+
+  if (!message) {
+    return {
+      ...input,
+      documents: [],
+    };
+  }
+
+  return {
+    projectName: input.projectName ?? "Email Intake",
+    sourceType: "email",
+    documents: toFixtureDocuments(message),
+  };
+}
 
 export async function runIntakeAgent(
   input: UploadIntakePayload,
   fixtureRoot: string,
 ): Promise<IntakeResult> {
-  const normalized = await normalizeIntakePayload(input, fixtureRoot);
+  const resolvedInput = await resolveEmailPayload(input);
+  const normalized = await normalizeIntakePayload(resolvedInput, fixtureRoot);
 
   if (!normalized.ok) {
     return normalized.result;
   }
 
   const rawDocumentsByName = new Map<string, RawFixtureDocument[]>();
-  for (const rawDocument of input.documents ?? []) {
+  for (const rawDocument of resolvedInput.documents ?? []) {
     const list = rawDocumentsByName.get(rawDocument.fileName) ?? [];
     list.push(rawDocument);
     rawDocumentsByName.set(rawDocument.fileName, list);
@@ -59,6 +90,7 @@ export async function runIntakeAgent(
     status: hasFailedPdf || hasWarnings ? "accepted_with_warnings" : "accepted",
     envelope: {
       ...normalized.envelope,
+      sourceType: resolvedInput.sourceType === "email" ? "email" : "upload",
       documents: extractedDocuments,
       warnings,
     },

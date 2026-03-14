@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "email:inbox:inbound": "tsx scripts/show-mock-inbound-email-inbox.ts",
+    "email:receive": "tsx scripts/receive-mock-email.ts",
     "start": "next start",
+    "email:inbox": "tsx scripts/show-mock-email-inbox.ts",
     "lint": "eslint",
     "agents:test": "node --import tsx --test test/*.test.ts",
     "comparison:run": "tsx scripts/run-comparison.ts",
@@ -20,6 +23,7 @@
     "parser:llm:test": "node --import tsx --test test/parser-llm.test.ts",
     "provider:test": "node --import tsx --test test/provider.test.ts",
     "completeness:run": "tsx scripts/run-completeness.ts",
+    "workflow:run:email": "tsx scripts/run-workflow-email.ts",
     "workflow:run": "tsx scripts/run-workflow.ts",
     "workflow:test": "node --import tsx --test test/workflow-orchestrator.test.ts"
   },

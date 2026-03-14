@@ -122,6 +122,7 @@ export type WorkflowState = {
   submittalTitle: string;
   currentStatus: string;
   incomingDocuments: string[];
+  subcontractorEmail?: string;
   parsedSubmittal?: ParsedSubmittal;
   requirementSet?: RequirementSet;
   completenessResult?: CompletenessResult;

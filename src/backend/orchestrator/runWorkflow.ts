@@ -5,6 +5,7 @@ import { runCompletenessAgent } from "../agents/completeness";
 import {
   applyExecutiveDecisionToWorkflowState,
   buildExecutiveLogEntry,
+  dispatchExecutiveNotifications,
   runExecutiveAgent,
 } from "../agents/executive";
 import { runIntakeAgent } from "../agents/intake";
@@ -258,6 +259,10 @@ function createInitialWorkflowState(
   reviewedAt: string,
 ): WorkflowState {
   const envelope = intakeResult.envelope;
+  const subcontractorEmail = envelope?.documents
+    .map((document) => document.fullText ?? "")
+    .join("\n")
+    .match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
 
   return {
     runId: envelope?.runId ?? `run-${reviewedAt}`,
@@ -269,6 +274,7 @@ function createInitialWorkflowState(
     currentStatus:
       intakeResult.status === "rejected" ? "intake_rejected" : "intake_accepted",
     incomingDocuments: incomingDocuments.map((document) => document.fileName),
+    subcontractorEmail,
     logs: [
       atTimestamp(
         reviewedAt,
@@ -428,11 +434,16 @@ export async function runSubmittalWorkflow(
   };
 
   const executiveResult = runExecutiveAgent(workflowState);
+  const notificationResult = await dispatchExecutiveNotifications(
+    workflowState,
+    executiveResult,
+  );
   workflowState = {
     ...applyExecutiveDecisionToWorkflowState(workflowState, executiveResult),
     logs: [
       ...workflowState.logs,
       buildExecutiveLogEntry(executiveResult, reviewedAt),
+      atTimestamp(reviewedAt, "executive_notification", notificationResult.message),
     ],
   };
 

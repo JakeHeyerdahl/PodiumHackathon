@@ -35,6 +35,11 @@ test("perfect.pdf currently returns to subcontractor because shop drawings are i
     result.workflowState.executiveDecision?.decision,
     "return_to_subcontractor",
   );
+  assert(
+    result.workflowState.executiveDecision?.nextActions.includes(
+      "Contact the subcontractor with the return notice and required corrections.",
+    ),
+  );
 });
 
 test("submittal-1.pdf currently returns because completeness treats the unresolved package as incomplete", async () => {
@@ -61,6 +66,11 @@ test("submittal-1.pdf currently returns because completeness treats the unresolv
     result.workflowState.executiveDecision?.decision,
     "return_to_subcontractor",
   );
+  assert(
+    result.workflowState.executiveDecision?.nextActions.includes(
+      "Contact the subcontractor with the return notice and required corrections.",
+    ),
+  );
 });
 
 test("busted.pdf currently returns because the parser cannot resolve a reviewable package", async () => {
@@ -86,5 +96,10 @@ test("busted.pdf currently returns because the parser cannot resolve a reviewabl
   assert.equal(
     result.workflowState.executiveDecision?.decision,
     "return_to_subcontractor",
+  );
+  assert(
+    result.workflowState.executiveDecision?.nextActions.includes(
+      "Contact the subcontractor with the return notice and required corrections.",
+    ),
   );
 });

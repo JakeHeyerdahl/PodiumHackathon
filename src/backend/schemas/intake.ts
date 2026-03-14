@@ -19,7 +19,7 @@ export type IntakeDocument = {
 
 export type IntakeEnvelope = {
   runId: string;
-  sourceType: "upload";
+  sourceType: "upload" | "email";
   receivedAt: string;
   projectName: string;
   documents: IntakeDocument[];
@@ -35,7 +35,9 @@ export type RawFixtureDocument = {
 export type UploadIntakePayload = {
   projectName?: string;
   submittalTitle?: string;
-  sourceType?: "upload";
+  sourceType?: "upload" | "email";
+  emailId?: string;
+  mailboxPath?: string;
   documents?: RawFixtureDocument[];
 };
 

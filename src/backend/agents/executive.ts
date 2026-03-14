@@ -3,6 +3,11 @@ import type {
   WorkflowLogEntry,
   WorkflowState,
 } from "../schemas/workflow";
+import {
+  sendEmail,
+  type EmailDeliveryResult,
+  type SendEmailInput,
+} from "../notifications/email";
 
 export type ExecutiveWorkflowStatus =
   | "executive_returned_to_subcontractor"
@@ -13,6 +18,11 @@ export type ExecutiveWorkflowStatus =
 export type ExecutiveAgentResult = {
   executiveDecision: ExecutiveDecision;
   workflowStatusUpdate: ExecutiveWorkflowStatus;
+};
+
+export type ExecutiveNotificationResult = {
+  status: "sent" | "skipped" | "failed";
+  message: string;
 };
 
 type ExecutiveReadyWorkflowState = WorkflowState & {
@@ -52,6 +62,7 @@ export const runExecutiveAgent = (
         ),
         nextActions: [
           "Return the package to the subcontractor workflow owner.",
+          "Contact the subcontractor to explain the missing workflow evidence and required resubmittal.",
           "Regenerate the missing workflow artifacts before the package re-enters executive review.",
           "Resubmit the package only after the backend state is complete.",
         ],
@@ -82,6 +93,7 @@ export const runExecutiveAgent = (
         ),
         nextActions: [
           "Return the package to the subcontractor.",
+          "Contact the subcontractor with the return notice and required corrections.",
           "Request the missing mandatory documents listed by the completeness review.",
           "Re-run the workflow after a complete resubmittal is received.",
         ],
@@ -178,3 +190,90 @@ export const applyExecutiveDecisionToWorkflowState = (
   currentStatus: result.workflowStatusUpdate,
   executiveDecision: result.executiveDecision,
 });
+
+function buildReturnNoticeEmail(
+  workflowState: WorkflowState,
+  executiveResult: ExecutiveAgentResult,
+): SendEmailInput | null {
+  if (executiveResult.executiveDecision.decision !== "return_to_subcontractor") {
+    return null;
+  }
+
+  if (!workflowState.subcontractorEmail) {
+    return null;
+  }
+
+  const missingDocuments = workflowState.completenessResult?.missingDocuments ?? [];
+  const missingDocumentSection =
+    missingDocuments.length > 0
+      ? `Missing documents:\n- ${missingDocuments.join("\n- ")}\n\n`
+      : "";
+  const reasoningSection = executiveResult.executiveDecision.reasoning
+    .map((reason) => `- ${reason}`)
+    .join("\n");
+
+  return {
+    to: workflowState.subcontractorEmail,
+    subject: `Submittal returned for correction: ${workflowState.submittalTitle}`,
+    text: [
+      "Your submittal has been returned for correction.",
+      "",
+      `Project: ${workflowState.projectName}`,
+      `Submittal: ${workflowState.submittalTitle}`,
+      "",
+      missingDocumentSection,
+      "Executive summary:",
+      executiveResult.executiveDecision.summary,
+      "",
+      "Reasoning:",
+      reasoningSection,
+      "",
+      "Next actions:",
+      executiveResult.executiveDecision.nextActions.map((action) => `- ${action}`).join("\n"),
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+function toNotificationMessage(result: EmailDeliveryResult): ExecutiveNotificationResult {
+  if (result.status === "sent") {
+    return {
+      status: "sent",
+      message: `Delivered mock return notice email to ${result.recipient} at ${result.mailboxPath}.`,
+    };
+  }
+
+  if (result.status === "failed") {
+    return {
+      status: "failed",
+      message: `Failed to send return notice email${result.recipient ? ` to ${result.recipient}` : ""}: ${result.reason}`,
+    };
+  }
+
+  return {
+    status: "skipped",
+    message: `Skipped return notice email: ${result.reason}`,
+  };
+}
+
+export async function dispatchExecutiveNotifications(
+  workflowState: WorkflowState,
+  executiveResult: ExecutiveAgentResult,
+  options?: {
+    sendEmailImpl?: (input: SendEmailInput) => Promise<EmailDeliveryResult>;
+  },
+): Promise<ExecutiveNotificationResult> {
+  const message = buildReturnNoticeEmail(workflowState, executiveResult);
+
+  if (!message) {
+    return {
+      status: "skipped",
+      message: "No subcontractor email was available for the return notice.",
+    };
+  }
+
+  const sendEmailImpl = options?.sendEmailImpl ?? sendEmail;
+  const emailResult = await sendEmailImpl(message);
+  return toNotificationMessage(emailResult);
+}
