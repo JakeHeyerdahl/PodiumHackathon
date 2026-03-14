@@ -243,12 +243,6 @@ const DEFAULT_REQUIRED_DOCUMENTS: MockRequirementDocument[] = [
     required: true,
     rationale: "Baseline technical literature is required for comparison.",
   },
-  {
-    key: "shop_drawings",
-    label: "Shop Drawings",
-    required: true,
-    rationale: "Review package should include dimensional or configuration details.",
-  },
 ];
 
 const DEFAULT_REQUIRED_ATTRIBUTES: MockRequirementAttribute[] = [

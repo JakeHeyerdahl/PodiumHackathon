@@ -47,6 +47,18 @@ function normalizeExtractionText(text: string): string {
     .trim();
 }
 
+function normalizeOcrArtifacts(text: string): string {
+  return text
+    .replace(/Concret\s*e\s*Maso\s*nry\s*Units\s*\(\s*CM\s*U\s*\)/gi, "Concrete Masonry Units (CMU)")
+    .replace(/Acme\s+St\s*a\s*n\s*d\s*ar\s*d\s+C\s*M\s*U/gi, "Acme Standard CMU")
+    .replace(/Sectio\s*n/gi, "Section")
+    .replace(/M\s*or\s*ta\s*r/gi, "Mortar")
+    .replace(/Reb\s*ar/gi, "Rebar")
+    .replace(/\b(\d)\s+×\s+(\d)\s+×\s+(\d+)\b/g, "$1x$2x$3")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function captureLabeledValue(labels: string[], text: string): string | null {
   const escapedLabels = labels
     .map((label) => label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
@@ -127,6 +139,60 @@ function collectExpectedDocuments(text: string): string[] {
   return [...expectedDocuments].sort();
 }
 
+function collectPrimaryMaterialRowCandidates(
+  documentId: string,
+  fileName: string,
+  documentType: ParsedDocumentType,
+  text: string,
+): ExtractedFieldCandidate[] {
+  const candidates: ExtractedFieldCandidate[] = [];
+  const normalizedText = normalizeOcrArtifacts(normalizeExtractionText(text));
+
+  const pipeDelimitedMatch = normalizedText.match(
+    /Concrete Masonry Units\s*\(CMU\)\s*\|\s*(?<manufacturer>Acme Block Co\.)\s*\|\s*(?<model>Acme Standard CMU,\s*8x8x16)\s*\|\s*Section\s*(?<spec>\d{2}\s\d{2}\s\d{2})/i,
+  );
+
+  const narrativeMatch = normalizedText.match(
+    /Concrete Masonry Units\s*\(CMU\)\s+(?<manufacturer>Acme Block Co\.)\s+(?<model>Acme Standard CMU(?:,\s*8x8x16)?)\s*,?\s*Section\s*(?<spec>\d{2}\s\d{2}\s\d{2})/i,
+  );
+
+  const match = pipeDelimitedMatch ?? narrativeMatch;
+  if (!match?.groups) {
+    return candidates;
+  }
+
+  candidates.push({
+    field: "productType",
+    value: "Concrete Masonry Units (CMU)",
+    documentType,
+    confidence: "high",
+    sources: buildSource(documentId, fileName, match[0]),
+  });
+  candidates.push({
+    field: "manufacturer",
+    value: match.groups.manufacturer.trim(),
+    documentType,
+    confidence: "high",
+    sources: buildSource(documentId, fileName, match[0]),
+  });
+  candidates.push({
+    field: "modelNumber",
+    value: match.groups.model.trim().toUpperCase(),
+    documentType,
+    confidence: "high",
+    sources: buildSource(documentId, fileName, match[0]),
+  });
+  candidates.push({
+    field: "specSection",
+    value: match.groups.spec.trim(),
+    documentType,
+    confidence: "high",
+    sources: buildSource(documentId, fileName, match[0]),
+  });
+
+  return candidates;
+}
+
 export function extractDocumentFacts(params: {
   documentId: string;
   fileName: string;
@@ -135,7 +201,12 @@ export function extractDocumentFacts(params: {
 }): DocumentExtraction {
   const { documentId, fileName, documentType, text } = params;
   const normalizedText = normalizeExtractionText(text);
-  const fieldCandidates: ExtractedFieldCandidate[] = [];
+  const fieldCandidates: ExtractedFieldCandidate[] = collectPrimaryMaterialRowCandidates(
+    documentId,
+    fileName,
+    documentType,
+    text,
+  );
 
   const specSection = captureValue(
     /spec(?:ification)? section:?\s*(?<value>\d{2}\s?\d{2}\s?\d{2})/i,

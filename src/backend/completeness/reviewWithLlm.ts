@@ -98,6 +98,7 @@ function buildPromptPayload(
     rules: [
       "Judge completeness, not technical compliance.",
       "Evaluate only the documents listed in requirementSet.requiredDocuments. Ignore any parser issue about a document that is not one of those required documents.",
+      "Parser identity field issues (unresolved specSection, modelNumber, manufacturer, productType, revision, or similar fields) do not affect document completeness. Focus only on whether the required documents listed in requirementSet.requiredDocuments are present in the package.",
       "A required document is present only when the available evidence strongly supports that the document exists in the package.",
       "Use ambiguous when evidence is partial, low-quality, OCR-blocked, failed to parse, or conflicting.",
       "Use missing when the package lacks credible evidence of the required document.",
@@ -121,8 +122,12 @@ function buildPromptPayload(
         })),
     },
     parsedSubmittal: {
-      parserSummary: parsedSubmittal.parserSummary,
-      unresolvedFields: parsedSubmittal.unresolvedFields,
+      parserSummary: {
+        parsedDocumentCount: parsedSubmittal.parserSummary.parsedDocumentCount,
+        warningCount: parsedSubmittal.parserSummary.warningCount,
+        errorCount: parsedSubmittal.parserSummary.errorCount,
+        reviewedAt: parsedSubmittal.parserSummary.reviewedAt,
+      },
       requiredParserMissingDocuments,
       identity: {
         specSection: summarizeFieldValue(parsedSubmittal.specSection),

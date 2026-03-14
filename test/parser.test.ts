@@ -7,26 +7,26 @@ import {
   getRequirementDocument,
 } from "../src/backend/demo/realPdfFixtures";
 
-test("perfect.pdf currently resolves the masonry package to the Mortar/QuikMix row", async () => {
+test("perfect.pdf resolves the masonry package to the CMU row", async () => {
   const fixture = getRealSubmittalFixture("perfect");
   const parsedSubmittal = await parseSubmittalDeterministic([fixture.document]);
 
   assert.equal(parsedSubmittal.specSection.value, "04 21 00");
-  assert.equal(parsedSubmittal.productType.value, "Mortar");
-  assert.equal(parsedSubmittal.manufacturer.value, "QuikMix");
-  assert.equal(parsedSubmittal.modelNumber.value, null);
+  assert.equal(parsedSubmittal.productType.value, "Concrete Masonry Units (CMU)");
+  assert.equal(parsedSubmittal.manufacturer.value, "Acme Block Co.");
+  assert.equal(parsedSubmittal.modelNumber.value, "ACME STANDARD CMU");
   assert.equal(parsedSubmittal.revision.value, "1");
-  assert.equal(parsedSubmittal.parserSummary.status, "needs_human_review");
+  assert.equal(parsedSubmittal.parserSummary.status, "parsed_with_warnings");
 });
 
-test("submittal-1.pdf currently resolves spec section only and leaves identity fields unresolved", async () => {
+test("submittal-1.pdf resolves the primary CMU identity fields from the material table", async () => {
   const fixture = getRealSubmittalFixture("submittal-1");
   const parsedSubmittal = await parseSubmittalDeterministic([fixture.document]);
 
   assert.equal(parsedSubmittal.specSection.value, "04 21 00");
-  assert.equal(parsedSubmittal.productType.value, null);
-  assert.equal(parsedSubmittal.manufacturer.value, null);
-  assert.equal(parsedSubmittal.modelNumber.value, null);
+  assert.equal(parsedSubmittal.productType.value, "Concrete Masonry Units (CMU)");
+  assert.equal(parsedSubmittal.manufacturer.value, "Acme Block Co.");
+  assert.equal(parsedSubmittal.modelNumber.value, "ACME STANDARD CMU, 8X8X16");
   assert.equal(parsedSubmittal.parserSummary.status, "needs_human_review");
 });
 

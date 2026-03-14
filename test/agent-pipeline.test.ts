@@ -181,7 +181,7 @@ test("completeness agent throws when the LLM path is unavailable", async () => {
   );
 });
 
-test("perfect.pdf currently reconstructs requirements around the misidentified Mortar/QuikMix row", async () => {
+test("perfect.pdf now reconstructs requirements around the CMU row", async () => {
   const fixture = getRealSubmittalFixture("perfect");
   const parsedSubmittal = await parseSubmittalDeterministic([fixture.document], {
     reviewedAt: "2026-01-01T00:00:00.000Z",
@@ -192,12 +192,12 @@ test("perfect.pdf currently reconstructs requirements around the misidentified M
     parsedSubmittal: toRequirementInput(parsedSubmittal),
   });
 
-  assert.equal(parsedSubmittal.parserSummary.status, "needs_human_review");
+  assert.equal(parsedSubmittal.parserSummary.status, "parsed_with_warnings");
   assert.equal(requirementSet.specSection.value, "04 21 00");
   assert.equal(
     requirementSet.requiredAttributes.find((attribute) => attribute.key === "manufacturer")
       ?.expectedValue,
-    "QuikMix",
+    "Acme Block Co.",
   );
 });
 

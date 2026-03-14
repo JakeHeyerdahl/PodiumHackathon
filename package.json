@@ -17,6 +17,7 @@
     "pdf:eval": "tsx scripts/run-real-pdf-eval.ts",
     "requirements:test": "node --import tsx --test test/requirements.test.ts",
     "requirements:pdf:test": "node --import tsx --test test/requirement-document.test.ts",
+    "parser:debug": "tsx scripts/run-parser-debug.ts",
     "parser:run": "tsx scripts/run-parser.ts",
     "parser:run:llm": "tsx scripts/run-parser-llm.ts",
     "parser:test": "node --import tsx --test test/parser.test.ts",
