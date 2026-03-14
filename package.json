@@ -6,43 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "agents:test": "node --import tsx --test test/*.test.ts",
-    "comparison:run": "tsx scripts/run-comparison.ts",
-    "comparison:test": "node --import tsx --test test/comparison.test.ts",
-    "intake:fixture": "tsx scripts/run-intake-fixture.ts",
-    "requirements:test": "node --import tsx --test test/requirements.test.ts",
-    "parser:fixtures": "tsx scripts/generate-parser-fixtures.ts",
-    "parser:run": "tsx scripts/run-parser.ts",
-    "parser:eval:llm": "tsx scripts/run-parser-evals.ts",
-    "parser:run:llm": "tsx scripts/run-parser-llm.ts",
-    "parser:snapshot": "tsx scripts/update-parser-snapshots.ts",
-    "parser:test": "node --import tsx --test test/parser.test.ts",
-    "provider:test": "node --import tsx --test test/provider.test.ts",
-    "completeness:run": "tsx scripts/run-completeness.ts",
-    "completeness:eval": "tsx scripts/run-completeness-evals.ts",
-    "workflow:run": "tsx scripts/run-workflow.ts",
-    "workflow:test": "node --import tsx --test test/workflow-orchestrator.test.ts"
+    "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0",
+    "lucide-react": "^0.577.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "zod": "^4.3.6"
+    "recharts": "^3.8.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "25.5.0",
-    "@types/pdfkit": "^0.17.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.1.6",
-    "pdfjs-dist": "^5.5.207",
-    "pdfkit": "^0.17.2",
     "tailwindcss": "^4.2.1",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }
