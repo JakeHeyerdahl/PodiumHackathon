@@ -566,7 +566,7 @@ function normalizeToken(value?: string | null): string {
 function normalizeAttributeKey(value: string): string {
   const token = normalizeToken(value);
 
-  if (token === "model_number") {
+  if (token === "model_number" || token === "modelnumber") {
     return "modelNumber";
   }
 

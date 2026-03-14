@@ -11,7 +11,8 @@
     "parser:fixtures": "tsx scripts/generate-parser-fixtures.ts",
     "parser:run": "tsx scripts/run-parser.ts",
     "parser:snapshot": "tsx scripts/update-parser-snapshots.ts",
-    "parser:test": "node --import tsx --test test/parser.test.ts"
+    "parser:test": "node --import tsx --test test/parser.test.ts",
+    "requirements:test": "node --import tsx --test test/requirements.test.ts"
   },
   "dependencies": {
     "next": "^16.1.6",

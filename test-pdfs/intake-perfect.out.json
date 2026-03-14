@@ -1,0 +1,52 @@
+{
+  "status": "accepted_with_warnings",
+  "envelope": {
+    "runId": "2d30f418-570b-45db-a5ed-07344960790d",
+    "sourceType": "upload",
+    "receivedAt": "2026-03-14T19:39:36.393Z",
+    "projectName": "Local Intake Test",
+    "packageLabel": "perfect.pdf",
+    "documents": [
+      {
+        "documentId": "doc_5afced50ee",
+        "fileName": "perfect.pdf",
+        "extension": ".pdf",
+        "mimeType": "application/pdf",
+        "byteSize": 81285,
+        "categoryHint": "unknown",
+        "extractionStatus": "parsed",
+        "warnings": [
+          "Unknown document category for perfect.pdf."
+        ],
+        "pageCount": 3,
+        "pages": [
+          {
+            "pageNumber": 1,
+            "text": "● Project Name: Greenfield Office Complex ● Project Number: GOC-2026-001 ● Submittal Number: SUB-045 (Revision 1 – Full Parameter Compliance) ● Date: March 14, 2026 ● Submitted By: ABC Masonry Inc. – Subcontractor Owner / Architect / GC: Greenfield Development / Smith & Co. Architects / Hamm Construction LLC 1. Submittal Purpose This submittal provides complete documentation for all masonry materials to be used on Building A and explicitly confirms 100% compliance with every parameter listed in Requirement Document SUB-REQ-001 (dated March 14, 2026), contract specifications, drawings, and applicable ASTM standards. 2. Material Information Item Manufact urer Prod u ct N a m e / M o d el Spec Re fer en ce Qt y Notes (Full Compliance with SUB-REQ-001) Concret e Maso nry Units (CM U) Acme Block Co. Acme St a n d ar d C M U, Sectio n 04 21 00 12 , 0 0 0 u n i ASTM C90, minimum 1,900 psi compressive strength, dimensional tolerance ±1/8 inch, color/texture exactly as approved architect mock-up (sample"
+          },
+          {
+            "pageNumber": 2,
+            "text": "8 × 8 × 1 6 t s photos attached confirming match) Mortar QuikMix Type N M or ta r Sectio n 04 05 13 3, 0 0 0 b a g s ASTM C270, light gray color (matches approved mock-up), mixing instructions per QuikMix manufacturer recommendations and project specifications Reinforc ing Steel SteelPro #4 R e b ar , G ra d e 6 0 Sectio n 03 20 00 2, 5 0 0 f t ASTM A615, 60,000 psi yield strength, uncoated (black epoxy coating not specified in project documents) 3. Product Data / Documentation Attached ● Manufacturer’s cut sheets and full specifications (all parameters listed) ● Test reports confirming every ASTM requirement ● Material Safety Data Sheets (MSDS) for all materials ● Sample photos and mock-up confirmation for architect approval (color, texture, and finish verified) 4. Certifications"
+          },
+          {
+            "pageNumber": 3,
+            "text": "● CMU – Factory certification confirming ASTM C90, minimum 1,900 psi compressive strength, and ±1/8 inch dimensional tolerances ● Mortar – Type N mix certificate confirming composition, compressive strength, light gray color, and mixing instructions per ASTM C270 ● Rebar – Mill test reports for Grade 60 steel (60,000 psi yield), certified by SteelPro 5. Subcontractor Confirmation We, ABC Masonry Inc., hereby confirm that all materials fully meet or exceed every parameter in Requirement Document SUB-REQ-001, including compressive strength, dimensional tolerances, color, mixing instructions, yield strength, and all other requirements. No substitutions or deviations are proposed. We understand that no work may proceed until this submittal has been reviewed and approved by the Architect / Engineer of Record. ● Submitted by: ● John Doe ● Project Manager – ABC Masonry Inc. ● Phone: (XXX) XXX-XXXX Email: jdoe@abcmasonry.com ● Signature: _______________________________ Date: March 14, 2026 ●"
+          }
+        ],
+        "fullText": "● Project Name: Greenfield Office Complex ● Project Number: GOC-2026-001 ● Submittal Number: SUB-045 (Revision 1 – Full Parameter Compliance) ● Date: March 14, 2026 ● Submitted By: ABC Masonry Inc. – Subcontractor Owner / Architect / GC: Greenfield Development / Smith & Co. Architects / Hamm Construction LLC 1. Submittal Purpose This submittal provides complete documentation for all masonry materials to be used on Building A and explicitly confirms 100% compliance with every parameter listed in Requirement Document SUB-REQ-001 (dated March 14, 2026), contract specifications, drawings, and applicable ASTM standards. 2. Material Information Item Manufact urer Prod u ct N a m e / M o d el Spec Re fer en ce Qt y Notes (Full Compliance with SUB-REQ-001) Concret e Maso nry Units (CM U) Acme Block Co. Acme St a n d ar d C M U, Sectio n 04 21 00 12 , 0 0 0 u n i ASTM C90, minimum 1,900 psi compressive strength, dimensional tolerance ±1/8 inch, color/texture exactly as approved architect mock-up (sample\n8 × 8 × 1 6 t s photos attached confirming match) Mortar QuikMix Type N M or ta r Sectio n 04 05 13 3, 0 0 0 b a g s ASTM C270, light gray color (matches approved mock-up), mixing instructions per QuikMix manufacturer recommendations and project specifications Reinforc ing Steel SteelPro #4 R e b ar , G ra d e 6 0 Sectio n 03 20 00 2, 5 0 0 f t ASTM A615, 60,000 psi yield strength, uncoated (black epoxy coating not specified in project documents) 3. Product Data / Documentation Attached ● Manufacturer’s cut sheets and full specifications (all parameters listed) ● Test reports confirming every ASTM requirement ● Material Safety Data Sheets (MSDS) for all materials ● Sample photos and mock-up confirmation for architect approval (color, texture, and finish verified) 4. Certifications\n● CMU – Factory certification confirming ASTM C90, minimum 1,900 psi compressive strength, and ±1/8 inch dimensional tolerances ● Mortar – Type N mix certificate confirming composition, compressive strength, light gray color, and mixing instructions per ASTM C270 ● Rebar – Mill test reports for Grade 60 steel (60,000 psi yield), certified by SteelPro 5. Subcontractor Confirmation We, ABC Masonry Inc., hereby confirm that all materials fully meet or exceed every parameter in Requirement Document SUB-REQ-001, including compressive strength, dimensional tolerances, color, mixing instructions, yield strength, and all other requirements. No substitutions or deviations are proposed. We understand that no work may proceed until this submittal has been reviewed and approved by the Architect / Engineer of Record. ● Submitted by: ● John Doe ● Project Manager – ABC Masonry Inc. ● Phone: (XXX) XXX-XXXX Email: jdoe@abcmasonry.com ● Signature: _______________________________ Date: March 14, 2026 ●"
+      }
+    ],
+    "warnings": [
+      "Unknown document category for perfect.pdf.",
+      "submittalTitle missing; packageLabel was inferred.",
+      "Unknown document category for perfect.pdf."
+    ]
+  },
+  "errors": [],
+  "warnings": [
+    "Unknown document category for perfect.pdf.",
+    "submittalTitle missing; packageLabel was inferred.",
+    "Unknown document category for perfect.pdf."
+  ],
+  "summary": "Intake accepted with warnings."
+}

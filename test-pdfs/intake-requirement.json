@@ -1,0 +1,11 @@
+{
+  "projectName": "Local Intake Test",
+  "sourceType": "upload",
+  "documents": [
+    {
+      "fileName": "requirement-1.pdf",
+      "path": "requirement-1.pdf",
+      "mimeType": "application/pdf"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "status": "accepted_with_warnings",
+  "envelope": {
+    "runId": "1c797e4d-7886-44a3-bcc4-61f0bbf0e430",
+    "sourceType": "upload",
+    "receivedAt": "2026-03-14T19:39:29.336Z",
+    "projectName": "Local Intake Test",
+    "packageLabel": "requirement-1.pdf",
+    "documents": [
+      {
+        "documentId": "doc_63b938b96f",
+        "fileName": "requirement-1.pdf",
+        "extension": ".pdf",
+        "mimeType": "application/pdf",
+        "byteSize": 73356,
+        "categoryHint": "unknown",
+        "extractionStatus": "parsed",
+        "warnings": [
+          "Unknown document category for requirement-1.pdf."
+        ],
+        "pageCount": 2,
+        "pages": [
+          {
+            "pageNumber": 1,
+            "text": "Project Name: Greenfield Office Complex Project Number: GOC-2026-001 Requirement Document: SUB-REQ-001 Date: March 14, 2026 Prepared By: Smith & Co. Architects 1. Concrete Masonry Units (CMU) Parameter Requirement Manufacturer Approved manufacturer per spec (Acme Block Co. or equivalent) Product Standard CMU, 8x8x16 ASTM Compliance ASTM C90 Compressive Strength Minimum 1900 psi Dimensional Tolerance ±1/8 inch Color/Texture As indicated in sample/mock-up approved by architect Quantity As per building schedule 2. Mortar Parameter Requirement Type Type N Mortar ASTM Compliance ASTM C270 Mixing Instructions As per manufacturer recommendations and project spec Color Light gray (match mock-up) Quantity As per structural and masonry schedule 3. Reinforcing Steel Parameter Requirement"
+          },
+          {
+            "pageNumber": 2,
+            "text": "Manufacturer SteelPro or approved equivalent Product #4 Rebar, Grade 60 ASTM Compliance ASTM A615 Yield Strength 60,000 psi Coating Black epoxy-coated (if specified) Quantity As per structural drawings 4. Documentation Required for Approval ● Manufacturer product data sheets ● Factory certifications / test reports ● MSDS for all materials ● Sample photos or mock-ups for architect approval 5. Notes / Additional Requirements ● Materials must meet all contract specifications, ASTM standards, and project drawings . ● Any substitution or deviation must be submitted for approval . ● Site samples may be requested to confirm color, texture, and finish ."
+          }
+        ],
+        "fullText": "Project Name: Greenfield Office Complex Project Number: GOC-2026-001 Requirement Document: SUB-REQ-001 Date: March 14, 2026 Prepared By: Smith & Co. Architects 1. Concrete Masonry Units (CMU) Parameter Requirement Manufacturer Approved manufacturer per spec (Acme Block Co. or equivalent) Product Standard CMU, 8x8x16 ASTM Compliance ASTM C90 Compressive Strength Minimum 1900 psi Dimensional Tolerance ±1/8 inch Color/Texture As indicated in sample/mock-up approved by architect Quantity As per building schedule 2. Mortar Parameter Requirement Type Type N Mortar ASTM Compliance ASTM C270 Mixing Instructions As per manufacturer recommendations and project spec Color Light gray (match mock-up) Quantity As per structural and masonry schedule 3. Reinforcing Steel Parameter Requirement\nManufacturer SteelPro or approved equivalent Product #4 Rebar, Grade 60 ASTM Compliance ASTM A615 Yield Strength 60,000 psi Coating Black epoxy-coated (if specified) Quantity As per structural drawings 4. Documentation Required for Approval ● Manufacturer product data sheets ● Factory certifications / test reports ● MSDS for all materials ● Sample photos or mock-ups for architect approval 5. Notes / Additional Requirements ● Materials must meet all contract specifications, ASTM standards, and project drawings . ● Any substitution or deviation must be submitted for approval . ● Site samples may be requested to confirm color, texture, and finish ."
+      }
+    ],
+    "warnings": [
+      "Unknown document category for requirement-1.pdf.",
+      "submittalTitle missing; packageLabel was inferred.",
+      "Unknown document category for requirement-1.pdf."
+    ]
+  },
+  "errors": [],
+  "warnings": [
+    "Unknown document category for requirement-1.pdf.",
+    "submittalTitle missing; packageLabel was inferred.",
+    "Unknown document category for requirement-1.pdf."
+  ],
+  "summary": "Intake accepted with warnings."
+}

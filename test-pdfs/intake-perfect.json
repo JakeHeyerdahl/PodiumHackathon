@@ -1,0 +1,11 @@
+{
+  "projectName": "Local Intake Test",
+  "sourceType": "upload",
+  "documents": [
+    {
+      "fileName": "perfect.pdf",
+      "path": "perfect.pdf",
+      "mimeType": "application/pdf"
+    }
+  ]
+}
