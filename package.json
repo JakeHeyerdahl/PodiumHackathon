@@ -5,48 +5,24 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "email:inbox:inbound": "tsx scripts/show-mock-inbound-email-inbox.ts",
-    "email:receive": "tsx scripts/receive-mock-email.ts",
     "start": "next start",
-    "email:inbox": "tsx scripts/show-mock-email-inbox.ts",
-    "lint": "eslint",
-    "agents:test": "node --import tsx --test test/*.test.ts",
-    "comparison:run": "tsx scripts/run-comparison.ts",
-    "comparison:test": "node --import tsx --test test/comparison.test.ts",
-    "intake:fixture": "tsx scripts/run-intake-fixture.ts",
-    "pdf:eval": "tsx scripts/run-real-pdf-eval.ts",
-    "requirements:test": "node --import tsx --test test/requirements.test.ts",
-    "requirements:pdf:test": "node --import tsx --test test/requirement-document.test.ts",
-    "parser:debug": "tsx scripts/run-parser-debug.ts",
-    "parser:run": "tsx scripts/run-parser.ts",
-    "parser:run:llm": "tsx scripts/run-parser-llm.ts",
-    "parser:test": "node --import tsx --test test/parser.test.ts",
-    "parser:llm:test": "node --import tsx --test test/parser-llm.test.ts",
-    "provider:test": "node --import tsx --test test/provider.test.ts",
-    "completeness:run": "tsx scripts/run-completeness.ts",
-    "workflow:run:email": "tsx scripts/run-workflow-email.ts",
-    "workflow:run": "tsx scripts/run-workflow.ts",
-    "workflow:test": "node --import tsx --test test/workflow-orchestrator.test.ts"
+    "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0",
+    "lucide-react": "^0.577.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "zod": "^4.3.6"
+    "recharts": "^3.8.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "25.5.0",
-    "@types/pdfkit": "^0.17.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.1.6",
-    "pdfjs-dist": "^5.5.207",
-    "pdfkit": "^0.17.2",
     "tailwindcss": "^4.2.1",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }
