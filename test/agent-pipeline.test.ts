@@ -128,7 +128,7 @@ test("requirements reconstruction anchors spec section and seeds deterministic e
   );
 });
 
-test("completeness agent falls back deterministically when the LLM path is unavailable", async () => {
+test("completeness agent throws when the LLM path is unavailable", async () => {
   const requirementSet = buildRequirementSet({
     projectName: "Demo Project",
     submittalTitle: "Custom completeness fallback test",
@@ -144,53 +144,49 @@ test("completeness agent falls back deterministically when the LLM path is unava
     },
   });
 
-  const completenessResult = await runCompletenessAgent({
-    parsedSubmittal: {
-      specSection: { value: "23 73 13", confidence: "high", sources: [] },
-      productType: {
-        value: "Packaged Indoor Air Handling Unit",
-        confidence: "high",
-        sources: [],
-      },
-      manufacturer: { value: "Acme Air Systems", confidence: "high", sources: [] },
-      modelNumber: { value: "AHU-9000", confidence: "high", sources: [] },
-      revision: { value: "B", confidence: "high", sources: [] },
-      extractedAttributes: [],
-      missingDocuments: ["Shop Drawings"],
-      deviations: [],
-      documentParses: [
-        {
-          documentId: "doc-01",
-          fileName: "product-data.pdf",
-          documentType: "product_data",
-          extractionStatus: "parsed",
-          textCoverage: 0.98,
-          detectedTextLength: 1200,
-          issues: [],
+  await assert.rejects(() =>
+    runCompletenessAgent({
+      parsedSubmittal: {
+        specSection: { value: "23 73 13", confidence: "high", sources: [] },
+        productType: {
+          value: "Packaged Indoor Air Handling Unit",
+          confidence: "high",
+          sources: [],
         },
-      ],
-      unresolvedFields: [],
-      parserSummary: {
-        status: "parsed",
-        parsedDocumentCount: 1,
-        warningCount: 0,
-        errorCount: 0,
-        reviewedAt: "2026-01-01T00:00:00.000Z",
+        manufacturer: { value: "Acme Air Systems", confidence: "high", sources: [] },
+        modelNumber: { value: "AHU-9000", confidence: "high", sources: [] },
+        revision: { value: "B", confidence: "high", sources: [] },
+        extractedAttributes: [],
+        missingDocuments: ["Shop Drawings"],
+        deviations: [],
+        documentParses: [
+          {
+            documentId: "doc-01",
+            fileName: "product-data.pdf",
+            documentType: "product_data",
+            extractionStatus: "parsed",
+            textCoverage: 0.98,
+            detectedTextLength: 1200,
+            issues: [],
+          },
+        ],
+        unresolvedFields: [],
+        parserSummary: {
+          status: "parsed",
+          parsedDocumentCount: 1,
+          warningCount: 0,
+          errorCount: 0,
+          reviewedAt: "2026-01-01T00:00:00.000Z",
+        },
+        issues: [],
+        trace: [],
       },
-      issues: [],
-      trace: [],
-    },
-    requirementSet,
-    allowDeterministicFallback: true,
-  });
-
-  assert.equal(completenessResult.reviewMode, "deterministic_fallback");
-  assert.equal(completenessResult.status, "incomplete");
-  assert.equal(completenessResult.isReviewable, false);
-  assert(completenessResult.missingDocuments.includes("Shop Drawings"));
+      requirementSet,
+    }),
+  );
 });
 
-test("good fixture can move through parser, requirements, and completeness deterministically", async () => {
+test("good fixture can move through parser and requirements deterministically", async () => {
   const fixture = getMockFixture("good-submittal");
   const parsedSubmittal = await parseSubmittalDeterministic(fixture.documents, {
     reviewedAt: "2026-01-01T00:00:00.000Z",
@@ -200,13 +196,6 @@ test("good fixture can move through parser, requirements, and completeness deter
     submittalTitle: fixture.description,
     parsedSubmittal: toRequirementInput(parsedSubmittal),
   });
-  const completenessResult = await runCompletenessAgent({
-    parsedSubmittal,
-    requirementSet,
-    allowDeterministicFallback: true,
-  });
-
-  assert.equal(completenessResult.status, "complete");
   assert.equal(parsedSubmittal.parserSummary.status, "parsed");
   assert.equal(requirementSet.specSection.value, "23 73 13");
   assert.equal(

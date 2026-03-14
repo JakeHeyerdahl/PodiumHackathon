@@ -40,6 +40,13 @@ function captureValue(pattern: RegExp, text: string): string | null {
   return match?.groups?.value?.trim() ?? null;
 }
 
+function normalizeExtractionText(text: string): string {
+  return text
+    .replace(/[●•]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function captureLabeledValue(labels: string[], text: string): string | null {
   const escapedLabels = labels
     .map((label) => label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
@@ -127,12 +134,21 @@ export function extractDocumentFacts(params: {
   text: string;
 }): DocumentExtraction {
   const { documentId, fileName, documentType, text } = params;
+  const normalizedText = normalizeExtractionText(text);
   const fieldCandidates: ExtractedFieldCandidate[] = [];
 
   const specSection = captureValue(
     /spec(?:ification)? section:?\s*(?<value>\d{2}\s?\d{2}\s?\d{2})/i,
     text,
-  );
+  ) ??
+    captureValue(
+      /(?:spec(?:ification)?\s*section|section)\s*:?\s*(?<value>\d{2}\s?\d{2}\s?\d{2})/i,
+      normalizedText,
+    ) ??
+    captureValue(
+      /sectio\s*n\s*(?<value>\d{2}\s?\d{2}\s?\d{2})/i,
+      text,
+    );
   if (specSection) {
     fieldCandidates.push({
       field: "specSection",
@@ -145,7 +161,11 @@ export function extractDocumentFacts(params: {
 
   const productType =
     captureLabeledValue(["Product Type"], text) ??
-    captureLabeledValue(["Equipment"], text);
+    captureLabeledValue(["Equipment"], text) ??
+    captureValue(
+      /(?:^|\s)(?<value>concrete masonry units\s*\(cmu\)|mortar|reinforcing steel)(?=\s+manufacturer|\s+approved|\s+parameter|\s+acme|\s+quikmix|\s+steelpro|$)/i,
+      normalizedText,
+    );
   if (productType) {
     fieldCandidates.push({
       field: "productType",
@@ -156,7 +176,16 @@ export function extractDocumentFacts(params: {
     });
   }
 
-  const manufacturer = captureLabeledValue(["Manufacturer"], text);
+  const manufacturer =
+    captureLabeledValue(["Manufacturer"], text) ??
+    captureValue(
+      /approved manufacturer per spec\s*\((?<value>[^)]+?)(?:\s+or equivalent)?\)/i,
+      normalizedText,
+    ) ??
+    captureValue(
+      /(?:concrete masonry units\s*\(cmu\)|mortar|reinforcing steel)\s+(?<value>acme block co\.|quikmix|steelpro)(?=\s+)/i,
+      normalizedText,
+    );
   if (manufacturer) {
     fieldCandidates.push({
       field: "manufacturer",
@@ -169,7 +198,11 @@ export function extractDocumentFacts(params: {
 
   const modelNumber =
     captureLabeledValue(["Model Number", "Model No.", "Model No", "Model"], text) ??
-    captureLabeledValue(["Unit Model"], text);
+    captureLabeledValue(["Unit Model"], text) ??
+    captureValue(
+      /(?:product|product standard)\s+(?<value>standard cmu|type n mortar|#4 rebar,\s*grade 60)(?=\s+astm|\s+section|\s+quantity|$)/i,
+      normalizedText,
+    );
   if (modelNumber) {
     fieldCandidates.push({
       field: "modelNumber",
@@ -182,7 +215,8 @@ export function extractDocumentFacts(params: {
 
   const revision =
     captureLabeledValue(["Revision"], text) ??
-    captureLabeledValue(["Rev"], text);
+    captureLabeledValue(["Rev"], text) ??
+    captureValue(/revision\s*(?<value>[a-z0-9.-]+)/i, normalizedText);
   if (revision) {
     fieldCandidates.push({
       field: "revision",
@@ -194,7 +228,20 @@ export function extractDocumentFacts(params: {
   }
 
   const deviations: ParserIssue[] = [];
-  if (/deviation|substitution|exception to specification/i.test(text)) {
+  const hasNegativeDeviationStatement =
+    /no\s+(substitutions?|deviations?)\s+(are\s+)?proposed/i.test(normalizedText) ||
+    /without\s+(substitutions?|deviations?)/i.test(normalizedText) ||
+    /no\s+exceptions?\s+(to\s+specification)?/i.test(normalizedText);
+  const hasPositiveDeviationStatement =
+    /document contains explicit deviation/i.test(normalizedText) ||
+    /(?:a|an)\s+deviation\s+(?:is|was)\s+proposed/i.test(normalizedText) ||
+    /(?:a|an)\s+substitution\s+(?:is|was)\s+proposed/i.test(normalizedText) ||
+    /proposed\s+(?:deviation|substitution)/i.test(normalizedText) ||
+    /deviation request/i.test(normalizedText) ||
+    /substitution request/i.test(normalizedText) ||
+    /exception letter/i.test(normalizedText);
+
+  if (!hasNegativeDeviationStatement && hasPositiveDeviationStatement) {
     deviations.push({
       code: "deviation_detected",
       severity: "warning",

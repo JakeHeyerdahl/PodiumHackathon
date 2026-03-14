@@ -31,7 +31,6 @@ export type RoutingInput = {
 export type RunRoutingAgentInput = RoutingInput &
   CreateLlmProviderOptions & {
     model?: string;
-    allowDeterministicFallback?: boolean;
     llmProvider?: LlmProvider;
   };
 
@@ -241,7 +240,6 @@ export const determineRoutingDecision = ({
 export async function runRoutingAgent(
   input: RunRoutingAgentInput,
 ): Promise<RoutingDecision> {
-  const deterministicDecision = determineRoutingDecision(input);
   const resolvedPolicy = resolveRoutingPolicy(input.routingPolicy);
   const llmProvider =
     input.llmProvider ??
@@ -249,31 +247,22 @@ export async function runRoutingAgent(
       provider: input.provider,
       anthropicApiKey: input.anthropicApiKey,
       anthropicModel: input.anthropicModel,
-      allowMockFallback: input.allowMockFallback,
+      allowMockFallback: false,
     });
 
-  try {
-    const response = await llmProvider.generateObject({
-      instructions:
-        "You are a construction submittal routing agent. Return strict structured JSON and choose the safest destination supported by the evidence and routing policy.",
-      input: JSON.stringify(buildRoutingPromptPayload(input, resolvedPolicy)),
-      schema: routingDecisionSchema,
-      schemaName: "routing_decision",
-      model:
-        input.model ??
-        input.anthropicModel ??
-        process.env.ANTHROPIC_ROUTING_MODEL ??
-        process.env.ANTHROPIC_MODEL,
-      maxOutputTokens: 1200,
-      fallbackObject: deterministicDecision,
-    });
+  const response = await llmProvider.generateObject({
+    instructions:
+      "You are a construction submittal routing agent. Return strict structured JSON and choose the safest destination supported by the evidence and routing policy.",
+    input: JSON.stringify(buildRoutingPromptPayload(input, resolvedPolicy)),
+    schema: routingDecisionSchema,
+    schemaName: "routing_decision",
+    model:
+      input.model ??
+      input.anthropicModel ??
+      process.env.ANTHROPIC_ROUTING_MODEL ??
+      process.env.ANTHROPIC_MODEL,
+    maxOutputTokens: 1200,
+  });
 
-    return response.object;
-  } catch (error) {
-    if (!input.allowDeterministicFallback) {
-      throw error;
-    }
-
-    return deterministicDecision;
-  }
+  return response.object;
 }

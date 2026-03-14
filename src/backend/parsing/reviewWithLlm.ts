@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { generateStructuredOutputWithAnthropic } from "../providers/anthropic";
+import {
+  createLlmProvider,
+  type CreateLlmProviderOptions,
+  type LlmProvider,
+} from "../providers";
 import type {
   DocumentFieldName,
   ExtractedAttribute,
@@ -51,9 +55,31 @@ const sourcedFieldSchema = z.object({
   sources: z.array(sourceReferenceSchema).max(8),
 });
 
+const packageMetadataSchema = z.object({
+  projectName: sourcedFieldSchema,
+  projectNumber: sourcedFieldSchema,
+  submittalNumber: sourcedFieldSchema,
+  requirementReference: sourcedFieldSchema,
+  complianceStatement: sourcedFieldSchema,
+});
+
 const attributeSchema = z.object({
   name: z.string().trim().min(1),
   value: z.string().trim().min(1),
+  confidence: confidenceSchema,
+  sources: z.array(sourceReferenceSchema).max(8),
+});
+
+const parsedItemSchema = z.object({
+  itemId: z.string().trim().min(1),
+  label: sourcedFieldSchema,
+  productType: sourcedFieldSchema,
+  specSection: sourcedFieldSchema,
+  manufacturer: sourcedFieldSchema,
+  modelNumber: sourcedFieldSchema,
+  attributes: z.array(attributeSchema).max(20),
+  requiredDocuments: z.array(z.string().trim().min(1)).max(20),
+  supportingDocuments: z.array(z.string().trim().min(1)).max(20),
   confidence: confidenceSchema,
   sources: z.array(sourceReferenceSchema).max(8),
 });
@@ -75,6 +101,8 @@ const documentAnalysisSchema = z.object({
 });
 
 export const parserReviewSchema = z.object({
+  packageMetadata: packageMetadataSchema,
+  items: z.array(parsedItemSchema).max(20),
   specSection: sourcedFieldSchema,
   productType: sourcedFieldSchema,
   manufacturer: sourcedFieldSchema,
@@ -82,6 +110,8 @@ export const parserReviewSchema = z.object({
   revision: sourcedFieldSchema,
   extractedAttributes: z.array(attributeSchema).max(20),
   missingDocuments: z.array(z.string().trim().min(1)).max(20),
+  requiredDocuments: z.array(z.string().trim().min(1)).max(20),
+  supportingDocuments: z.array(z.string().trim().min(1)).max(40),
   deviations: z.array(parserIssueSchema).max(20),
   issues: z.array(parserIssueSchema).max(20),
   documentAnalyses: z.array(documentAnalysisSchema),
@@ -99,24 +129,29 @@ export type ExtractedParserDocument = {
 export type ReviewParserWithLlmInput = {
   documents: ExtractedParserDocument[];
   model?: string;
-};
+  llmProvider?: LlmProvider;
+} & CreateLlmProviderOptions;
 
 const PARSER_SYSTEM_PROMPT = `You are the Parsing Agent in an autonomous construction submittal orchestration backend.
 
-Your job is to extract structured submittal facts from provided document text.
+Your job is to extract structured construction submittal package facts from provided document text.
 
 Rules:
 - Return strict structured JSON only.
 - Use only the provided evidence.
 - Do not invent values that are not grounded in document text.
+- Treat the package as potentially multi-item and multi-material. Do not force it into one single-product interpretation when the evidence shows multiple materials or line items.
+- Use packageMetadata for overall package identity such as project, submittal number, requirement reference, and package-level compliance statement.
+- Use items[] for meaningful materials, products, or line items in the package.
 - If evidence conflicts, choose the most defensible value and add a conflicting_values issue.
 - If a field cannot be resolved confidently, return value null with low confidence.
-- Mark explicit substitutions, deviations, or exceptions as deviation_detected issues.
+- Mark explicit proposed substitutions, deviations, or exceptions as deviation_detected issues. Do not flag negative statements like "no substitutions or deviations are proposed" as deviations.
 - Classify each document into exactly one documentType.
 - Keep outputs concise, operational, and backend-oriented.
 - Sources must reference the documentId and fileName from the input.
 - Use short excerpt snippets, not full document text.
-- Prefer submittal covers and product data over weaker supporting documents when choosing core identity fields.
+- Prefer submittal covers and product data over weaker supporting documents when choosing package identity fields.
+- Keep top-level specSection/productType/manufacturer/modelNumber/revision populated with the strongest package-level values for backward compatibility, even when multiple items exist.
 `;
 
 function buildPromptPayload(documents: ExtractedParserDocument[]) {
@@ -125,7 +160,10 @@ function buildPromptPayload(documents: ExtractedParserDocument[]) {
       "Extract the normalized parsed submittal facts for this package using only the supplied document evidence.",
     rules: [
       "The package-level identity should be based on the strongest available evidence.",
+      "items should include the main materials, products, or components represented by the package when the package covers multiple items.",
       "missingDocuments should list package documents clearly implied by the available evidence but absent from the package.",
+      "requiredDocuments should list the package documents that the submittal says are attached or required for approval.",
+      "supportingDocuments should list package documents that are actually present or explicitly referenced as attached.",
       "If a document has no usable text, do not infer facts from it.",
       "When a conflict exists, preserve the chosen value and record a conflicting_values issue.",
     ],
@@ -151,19 +189,29 @@ function buildPromptPayload(documents: ExtractedParserDocument[]) {
 export async function reviewParserWithLlm(
   input: ReviewParserWithLlmInput,
 ): Promise<ParserLlmReview> {
-  const result = await generateStructuredOutputWithAnthropic({
-    systemPrompt: PARSER_SYSTEM_PROMPT,
-    userPrompt: JSON.stringify(buildPromptPayload(input.documents)),
+  const llmProvider =
+    input.llmProvider ??
+    createLlmProvider({
+      provider: input.provider,
+      anthropicApiKey: input.anthropicApiKey,
+      anthropicModel: input.anthropicModel,
+      allowMockFallback: input.allowMockFallback,
+    });
+  const result = await llmProvider.generateObject({
+    instructions: PARSER_SYSTEM_PROMPT,
+    input: JSON.stringify(buildPromptPayload(input.documents)),
     schema: parserReviewSchema,
-    maxTokens: 2500,
+    schemaName: "parser_review",
     model:
       input.model ??
+      input.anthropicModel ??
       process.env.ANTHROPIC_PARSER_MODEL ??
       process.env.ANTHROPIC_MODEL ??
       "claude-sonnet-4-5-20250929",
+    maxOutputTokens: 2500,
   });
 
-  return result.output;
+  return result.object;
 }
 
 export function sanitizeSources(

@@ -4,6 +4,7 @@ import test, { before } from "node:test";
 
 import { runSubmittalWorkflow } from "../src/backend/orchestrator/runWorkflow";
 import { generateParserFixtures } from "../scripts/generate-parser-fixtures";
+import { loadLocalEnv } from "../scripts/load-local-env";
 
 const generatedFixtureRoot = path.resolve(
   process.cwd(),
@@ -11,6 +12,7 @@ const generatedFixtureRoot = path.resolve(
 );
 
 before(async () => {
+  loadLocalEnv();
   await generateParserFixtures();
 });
 
@@ -46,6 +48,11 @@ test("workflow happy path advances a complete compliant package", async () => {
     {
       fixtureRoot: generatedFixtureRoot,
       reviewedAt: "2026-03-14T12:00:00.000Z",
+      parserMode: "deterministic",
+      parserModel: process.env.ANTHROPIC_MODEL,
+      completenessModel: process.env.ANTHROPIC_COMPLETENESS_MODEL,
+      comparisonModel: process.env.ANTHROPIC_COMPARISON_MODEL,
+      routingModel: process.env.ANTHROPIC_ROUTING_MODEL,
     },
   );
 
@@ -102,6 +109,11 @@ test("workflow exception path escalates a complete package with a declared devia
     {
       fixtureRoot: generatedFixtureRoot,
       reviewedAt: "2026-03-14T12:00:00.000Z",
+      parserMode: "deterministic",
+      parserModel: process.env.ANTHROPIC_MODEL,
+      completenessModel: process.env.ANTHROPIC_COMPLETENESS_MODEL,
+      comparisonModel: process.env.ANTHROPIC_COMPARISON_MODEL,
+      routingModel: process.env.ANTHROPIC_ROUTING_MODEL,
     },
   );
 

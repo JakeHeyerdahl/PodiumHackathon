@@ -1,5 +1,9 @@
 import { existsSync } from "node:fs";
 
+import type {
+  CreateLlmProviderOptions,
+  LlmProvider,
+} from "../providers";
 import { classifyDocument } from "../parsing/classifyDocument";
 import { composeParsedSubmittal } from "../parsing/composeParsedSubmittal";
 import { extractDocumentFacts } from "../parsing/extractDocumentFacts";
@@ -16,7 +20,9 @@ export type ParserAgentOptions = {
   reviewedAt?: string;
   model?: string;
   mode?: "llm" | "deterministic";
-};
+  allowDeterministicFallback?: boolean;
+  llmProvider?: LlmProvider;
+} & CreateLlmProviderOptions;
 
 type ExtractedParserDocument = {
   document: IncomingDocument;
@@ -178,11 +184,26 @@ export async function parseSubmittal(
   }
 
   const { trace, documents } = await extractParserDocuments(incomingDocuments);
-  const parsedSubmittal = await runLlmParser({
-    documents,
-    reviewedAt,
-    model: options?.model,
-  });
+  let parsedSubmittal: DetailedParsedSubmittal;
+
+  try {
+    parsedSubmittal = await runLlmParser({
+      documents,
+      reviewedAt,
+      model: options?.model,
+      llmProvider: options?.llmProvider,
+      provider: options?.provider,
+      anthropicApiKey: options?.anthropicApiKey,
+      anthropicModel: options?.anthropicModel,
+      allowMockFallback: options?.allowMockFallback,
+    });
+  } catch (error) {
+    if (!options?.allowDeterministicFallback) {
+      throw error;
+    }
+
+    return parseSubmittalDeterministic(incomingDocuments, { reviewedAt });
+  }
 
   return {
     ...parsedSubmittal,

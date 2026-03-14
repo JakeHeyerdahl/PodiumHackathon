@@ -84,6 +84,53 @@ test("comparison agent treats declared deviations as mismatches", () => {
   );
 });
 
+test("comparison agent compares package items and required supporting documents", () => {
+  const result = runTechnicalComparisonAgent(
+    {
+      items: [
+        {
+          itemId: "cmu",
+          label: "Concrete Masonry Units (CMU)",
+          productType: "Concrete Masonry Units (CMU)",
+          specSection: "04 21 00",
+          manufacturer: "Acme Block Co.",
+          modelNumber: "Standard CMU, 8x8x16",
+          extractedAttributes: {
+            compressiveStrength: "1900 psi",
+          },
+          supportingDocuments: ["Manufacturer product data sheets"],
+        },
+      ],
+      supportingDocuments: ["Factory certifications / test reports"],
+      deviations: [],
+    },
+    {
+      requiredItems: [
+        {
+          itemId: "cmu",
+          label: "Concrete Masonry Units (CMU)",
+          productType: "Concrete Masonry Units (CMU)",
+          specSection: "04 21 00",
+          manufacturer: "Acme Block Co.",
+          modelNumber: "Standard CMU, 8x8x16",
+          requiredAttributes: {
+            compressiveStrength: "1900 psi",
+          },
+          requiredDocuments: ["Manufacturer product data sheets"],
+        },
+      ],
+      requiredDocuments: ["Factory certifications / test reports"],
+    },
+  );
+
+  assert.equal(result.status, "compliant");
+  assert(
+    result.matches.some(
+      (item) => item.field === "item:cmu.compressiveStrength",
+    ),
+  );
+});
+
 test("runComparisonAgent returns a structured LLM comparison result", async () => {
   const scenario = getComparisonScenario("compliant");
   const result = await runComparisonAgent({
@@ -114,33 +161,12 @@ test("runComparisonAgent returns a structured LLM comparison result", async () =
   assert.equal(result.summary.matchCount, 1);
 });
 
-test("runComparisonAgent falls back to deterministic comparison when the LLM path fails", async () => {
+test("runComparisonAgent throws when the LLM path fails", async () => {
   const scenario = getComparisonScenario("top-level-mismatch");
-  const result = await runComparisonAgent({
-    parsedSubmittal: scenario.parsedSubmittal,
-    requirementSet: scenario.requirementSet,
-    allowDeterministicFallback: true,
-    llmProvider: new MockLlmProvider({
-      objectHandler: () => {
-        throw new Error("Synthetic LLM failure.");
-      },
-    }),
-  });
-
-  assert.equal(result.status, "deviation_detected");
-  assert(
-    result.mismatches.some((item) => item.field === "manufacturer"),
-  );
-});
-
-test("runComparisonAgent throws when LLM comparison fails and fallback is disabled", async () => {
-  const scenario = getComparisonScenario("compliant");
-
   await assert.rejects(() =>
     runComparisonAgent({
       parsedSubmittal: scenario.parsedSubmittal,
       requirementSet: scenario.requirementSet,
-      allowDeterministicFallback: false,
       llmProvider: new MockLlmProvider({
         objectHandler: () => {
           throw new Error("Synthetic LLM failure.");

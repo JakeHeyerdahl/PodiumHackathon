@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { parseSubmittalDeterministic } from "../src/backend/agents/parser";
+import { parseSubmittal, parseSubmittalDeterministic } from "../src/backend/agents/parser";
 import {
   getMockFixture,
   listMockFixtures,
@@ -14,6 +14,7 @@ function printUsage(): void {
   console.log("Usage:");
   console.log("  npm run parser:run -- <fixture-name>");
   console.log("  npm run parser:run -- --files /abs/one.pdf,/abs/two.pdf");
+  console.log("  npm run parser:run -- --files /abs/one.pdf --deterministic");
   console.log(`Fixtures: ${listMockFixtures().join(", ")}`);
 }
 
@@ -42,6 +43,7 @@ function parseCliDocuments(): IncomingDocument[] | null {
 
 async function main(): Promise<void> {
   await generateParserFixtures();
+  const deterministic = process.argv.includes("--deterministic");
 
   const cliDocuments = parseCliDocuments();
   let documents: IncomingDocument[];
@@ -63,8 +65,14 @@ async function main(): Promise<void> {
     label = fixture.name;
   }
 
-  const parsedSubmittal = await parseSubmittalDeterministic(documents);
+  const parsedSubmittal = deterministic
+    ? await parseSubmittalDeterministic(documents)
+    : await parseSubmittal(documents, {
+        mode: "llm",
+        allowDeterministicFallback: true,
+      });
   console.log(`Parser fixture: ${label}`);
+  console.log(`Mode: ${deterministic ? "deterministic" : "llm"}`);
   console.log(`Status: ${parsedSubmittal.parserSummary.status}`);
   console.log(`Documents: ${parsedSubmittal.parserSummary.parsedDocumentCount}`);
   console.log(`Warnings: ${parsedSubmittal.parserSummary.warningCount}`);

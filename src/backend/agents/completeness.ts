@@ -43,6 +43,29 @@ const buildRequirementTokens = (requirement: RequiredDocument): string[] =>
       .filter(Boolean),
   );
 
+function expandRequirementAliases(values: string[]): string[] {
+  const expanded = new Set<string>();
+
+  for (const value of values) {
+    if (!value) {
+      continue;
+    }
+
+    expanded.add(value);
+
+    const normalizedWhitespace = value.replace(/[_-]+/g, " ").trim();
+    if (normalizedWhitespace) {
+      expanded.add(normalizedWhitespace);
+    }
+
+    if (normalizedWhitespace.endsWith("s")) {
+      expanded.add(normalizedWhitespace.slice(0, -1));
+    }
+  }
+
+  return [...expanded];
+}
+
 const normalizeRequirement = (
   requirement: RequiredDocument,
 ): NormalizedRequirement | null => {
@@ -175,154 +198,30 @@ export type LlmCompletenessInput = {
   parsedSubmittal: DetailedParsedSubmittal;
   requirementSet: ReconstructedRequirementSet;
   model?: string;
-  allowDeterministicFallback?: boolean;
 };
 
 export async function runCompletenessAgent(
   input: LlmCompletenessInput,
 ): Promise<CompletenessResult> {
-  try {
-    const review = await reviewCompletenessWithLlm({
-      parsedSubmittal: input.parsedSubmittal,
-      requirementSet: input.requirementSet,
-      model: input.model,
-    });
+  const review = await reviewCompletenessWithLlm({
+    parsedSubmittal: input.parsedSubmittal,
+    requirementSet: input.requirementSet,
+    model: input.model,
+  });
 
-    return {
-      status: review.status,
-      isReviewable: review.isReviewable,
-      missingDocuments: review.missingDocuments,
-      ambiguousDocuments: review.ambiguousDocuments,
-      rationale: review.rationale,
-      confidence: review.confidence,
-      reviewMode: "llm",
-      model:
-        input.model ??
-        process.env.ANTHROPIC_COMPLETENESS_MODEL ??
-        process.env.ANTHROPIC_MODEL ??
-        "claude-sonnet-4-5-20250929",
-      evidence: review.evidence,
-    };
-  } catch (error) {
-    if (!input.allowDeterministicFallback) {
-      throw error;
-    }
-
-    const fallback = evaluateCompleteness(
-      buildDeterministicCompletenessInput(
-        input.parsedSubmittal,
-        input.requirementSet,
-      ),
-    );
-
-    const message =
-      error instanceof Error ? error.message : "Unknown LLM completeness error.";
-
-    return {
-      ...fallback,
-      confidence: "low",
-      reviewMode: "deterministic_fallback",
-      rationale: {
-        summary: `${fallback.rationale.summary} Used deterministic fallback after the LLM path failed.`,
-        facts: [...fallback.rationale.facts, message],
-      },
-      evidence: input.requirementSet.requiredDocuments
-        .filter((document) => document.required)
-        .map((document) => ({
-          requirementKey: document.key,
-          requirementLabel: document.label,
-          decision: fallback.missingDocuments.includes(document.label)
-            ? "missing"
-            : fallback.ambiguousDocuments.includes(document.label)
-              ? "ambiguous"
-              : "present",
-          matchedDocumentIds: findMatchedDocumentIds(
-            document,
-            input.parsedSubmittal.documentParses,
-          ),
-          reasoning:
-            "Deterministic fallback used normalized document-title matching because the LLM review was unavailable.",
-        })),
-    };
-  }
-}
-
-function buildDeterministicCompletenessInput(
-  parsedSubmittal: DetailedParsedSubmittal,
-  requirementSet: ReconstructedRequirementSet,
-): CompletenessInput {
   return {
-    parsedSubmittal: {
-      specSection: parsedSubmittal.specSection.value ?? "",
-      productType: parsedSubmittal.productType.value ?? "",
-      manufacturer: parsedSubmittal.manufacturer.value ?? "",
-      modelNumber: parsedSubmittal.modelNumber.value ?? "",
-      revision: parsedSubmittal.revision.value ?? undefined,
-      submittedDocuments: parsedSubmittal.documentParses.map((document) => ({
-        id: document.documentId,
-        kind: document.documentType,
-        title: document.fileName,
-        sourceDocument: document.fileName,
-      })),
-      missingDocuments: parsedSubmittal.missingDocuments,
-      deviations: parsedSubmittal.deviations.map((issue) => issue.message),
-    },
-    requirementSet: {
-      specSection: requirementSet.specSection.value,
-      requiredAttributes: requirementSet.requiredAttributes.map(
-        (attribute) => attribute.key,
-      ),
-      requiredDocuments: requirementSet.requiredDocuments.map((document) => ({
-        key: document.key,
-        label: document.label,
-        required: document.required,
-        aliases: expandRequirementAliases([document.label, document.key]),
-      })),
-      routingPolicy: requirementSet.routingPolicy.completeDestination,
-    },
+    status: review.status,
+    isReviewable: review.isReviewable,
+    missingDocuments: review.missingDocuments,
+    ambiguousDocuments: review.ambiguousDocuments,
+    rationale: review.rationale,
+    confidence: review.confidence,
+    reviewMode: "llm",
+    model:
+      input.model ??
+      process.env.ANTHROPIC_COMPLETENESS_MODEL ??
+      process.env.ANTHROPIC_MODEL ??
+      "claude-sonnet-4-5-20250929",
+    evidence: review.evidence,
   };
-}
-
-function findMatchedDocumentIds(
-  requirement: { key: string; label: string },
-  documents: DetailedParsedSubmittal["documentParses"],
-): string[] {
-  const tokens = uniqueValues(
-    expandRequirementAliases([requirement.key, requirement.label])
-      .map(normalizeValue)
-      .filter(Boolean),
-  );
-
-  return documents
-    .filter((document) => {
-      const text = normalizeValue(
-        [document.documentId, document.documentType, document.fileName].join(" "),
-      );
-
-      return tokens.some((token) => text.indexOf(token) !== -1);
-    })
-    .map((document) => document.documentId);
-}
-
-function expandRequirementAliases(values: string[]): string[] {
-  const expanded = new Set<string>();
-
-  for (const value of values) {
-    if (!value) {
-      continue;
-    }
-
-    expanded.add(value);
-
-    const normalizedWhitespace = value.replace(/[_-]+/g, " ").trim();
-    if (normalizedWhitespace) {
-      expanded.add(normalizedWhitespace);
-    }
-
-    if (normalizedWhitespace.endsWith("s")) {
-      expanded.add(normalizedWhitespace.slice(0, -1));
-    }
-  }
-
-  return [...expanded];
 }

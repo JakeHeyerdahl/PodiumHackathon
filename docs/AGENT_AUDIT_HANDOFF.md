@@ -4,204 +4,141 @@ Date: 2026-03-14
 
 ## Current Snapshot
 
-This repo is still mostly a Next.js scaffold on the frontend. The meaningful work so far is concentrated in `src/backend`, `fixtures/intake`, and `scripts/run-intake-fixture.ts`.
+This repo is no longer just a scaffold plus disconnected backend experiments. It now contains a working fixture-driven backend workflow with an orchestrator, agent modules, parser fixtures, and automated tests.
 
-There are currently two backend tracks in the tree:
+The frontend is still lightweight, but the backend path from intake through executive decision is wired in code.
 
-1. A runnable intake pipeline that normalizes upload payloads and extracts text from fixture PDFs.
-2. A richer parser/orchestration prototype with document classification, fact extraction, completeness, comparison, routing, and executive decision modules.
-
-These tracks are not wired together into a single end-to-end workflow yet.
-
-## What Has Been Created
+## What Exists Today
 
 ### Frontend shell
 
 - `src/app/page.jsx`
-  - Minimal placeholder page only.
+  - minimal placeholder interface
 - `src/app/layout.jsx`, `src/app/globals.css`, `src/index.css`
-  - App shell styling and base layout.
+  - app shell and base styling
 
-### Intake pipeline that runs today
+### Intake workflow
+
+- `src/backend/agents/intake.ts`
+  - orchestrates payload normalization and PDF extraction
+- `src/backend/intake/normalize.ts`
+  - validates payload shape and creates normalized document metadata
+- `src/backend/intake/extractPdf.ts`
+  - extracts text and warnings from local PDFs
+- `fixtures/intake/*.json`
+  - fixture payloads for local intake and workflow runs
+- `scripts/run-intake-fixture.ts`
+  - CLI harness for intake-only runs
+
+### Parser workflow
+
+- `src/backend/agents/parser.ts`
+  - supports deterministic and LLM-backed parsing modes
+- `src/backend/parsing/classifyDocument.ts`
+  - heuristic document typing
+- `src/backend/parsing/extractPdfText.ts`
+  - parser-side PDF extraction and issue tagging
+- `src/backend/parsing/extractDocumentFacts.ts`
+  - deterministic field and attribute extraction
+- `src/backend/parsing/composeParsedSubmittal.ts`
+  - merges extracted evidence into normalized parser output
+- `src/backend/parsing/runLlmParser.ts`
+  - LLM-backed parser execution
+- `src/backend/parsing/reviewWithLlm.ts`
+  - parser review and structured-output helpers
+- `src/backend/demo/mockSubmittals.ts`
+  - deterministic fixture access for parser tests
+
+### Decision agents
+
+- `src/backend/agents/requirements.ts`
+  - reconstructs normalized requirement data
+- `src/backend/agents/completeness.ts`
+  - runs completeness review
+- `src/backend/agents/comparison.ts`
+  - runs deterministic and LLM-backed comparison logic
+- `src/backend/agents/routing.ts`
+  - resolves routing policy and next destination
+- `src/backend/agents/executive.ts`
+  - makes the final workflow call and updates workflow status
+
+### Orchestration
+
+- `src/backend/orchestrator/runWorkflow.ts`
+  - runs intake -> parser -> requirements -> completeness -> comparison -> routing -> executive
+  - returns both workflow-facing state and richer intermediate artifacts
+- `scripts/run-workflow.ts`
+  - local CLI entrypoint for full workflow runs
+
+### Shared contracts and providers
 
 - `src/backend/schemas/intake.ts`
-  - Types for upload payloads, intake envelope, extracted documents, and intake results.
-- `src/backend/intake/normalize.ts`
-  - Validates payload shape.
-  - Generates `runId`, document IDs, byte sizes, warnings, and extraction status defaults.
-- `src/backend/intake/extractPdf.ts`
-  - Uses `pdfjs-dist` to parse local fixture PDFs into `fullText`.
-  - Flags empty or low-text PDFs with warnings.
-- `src/backend/intake/runIntakeAgent.ts`
-  - Orchestrates validation + PDF text extraction.
-  - Returns `accepted`, `accepted_with_warnings`, or `rejected`.
-- `scripts/run-intake-fixture.ts`
-  - CLI harness for running intake against fixture JSON payloads.
-
-### Fixture coverage
-
-- `fixtures/intake/good-upload.json`
-  - Happy path with two valid PDFs.
-- `fixtures/intake/one-good-one-bad.json`
-  - One valid PDF and one broken PDF.
-- `fixtures/intake/empty-text-pdf.json`
-  - PDF parses but yields no searchable text.
-- `fixtures/intake/missing-project-name.json`
-  - Validation failure.
-- `fixtures/intake/mixed-documents-with-warnings.json`
-  - Duplicate filename plus skipped non-PDF file.
-- `fixtures/intake/files/*`
-  - Supporting PDFs and images used by the fixtures.
-
-### Rich parser prototype
-
-- `src/backend/classifiers/documentClassifier.ts`
-  - Heuristic document type classification from filename/text.
-- `src/backend/extractors/pdfTextExtractor.ts`
-  - PDF extraction with text coverage and OCR-needed warnings.
-- `src/backend/normalizers/submittalFieldExtractor.ts`
-  - Regex-based extraction of spec section, product type, manufacturer, model number, revision, attributes, deviations, and expected docs.
-- `src/backend/mergers/composeParsedSubmittal.ts`
-  - Merges extracted evidence into a confidence-scored `DetailedParsedSubmittal`.
-- `src/backend/agents/parser.ts`
-  - Runs extraction, classification, normalization, and composition for incoming docs.
-
-### Decision agent prototypes
-
-- `src/backend/agents/requirements.ts`
-  - Builds a rich requirement set from parsed submittal data plus mock project context.
-- `src/backend/agents/completeness.ts`
-  - Evaluates required document presence.
-- `src/backend/agents/comparison.ts`
-  - Compares parsed facts against required values.
-- `src/backend/agents/routing.ts`
-  - Produces routing destination and action list.
-- `src/backend/agents/executive.ts`
-  - Produces final executive decision and workflow status update.
+  - intake payloads and normalized envelope types
 - `src/backend/schemas/workflow.ts`
-  - Shared workflow and parser-oriented types.
+  - workflow state plus parser/completeness/comparison/routing/executive types
+- `src/backend/providers/*.ts`
+  - Anthropic and mock provider abstractions
 
-### Planning doc
+### Tests and fixtures
 
-- `docs/SPRINT_AGENT_ORCHESTRATION.md`
-  - Sprint intent and target architecture.
+- `test/parser.test.ts`
+  - deterministic parser and snapshot coverage
+- `test/workflow-orchestrator.test.ts`
+  - end-to-end workflow happy path and deviation path
+- `test/comparison.test.ts`
+- `test/requirements.test.ts`
+- `test/routing.test.ts`
+- `test/provider.test.ts`
+- `test/agent-pipeline.test.ts`
+- `scripts/generate-parser-fixtures.ts`
+  - generates synthetic parser PDFs
+- `scripts/fixtures/expected/*.json`
+  - parser snapshot expectations
 
-## What Was Verified
+## What Was Verified In This Audit
 
-### Commands that worked
+The docs and file layout were reviewed against the current tree on 2026-03-14.
 
-- `npm run lint`
-  - Passed.
-- `npm run intake:fixture fixtures/intake/good-upload.json -- --summary`
-  - Passed. Returned `accepted`.
-- `npm run intake:fixture fixtures/intake/one-good-one-bad.json -- --summary`
-  - Passed. Returned `accepted_with_warnings`.
-- `npm run intake:fixture fixtures/intake/empty-text-pdf.json -- --summary`
-  - Passed. Returned `accepted_with_warnings`.
-- `npm run intake:fixture fixtures/intake/mixed-documents-with-warnings.json -- --summary`
-  - Passed. Returned `accepted_with_warnings`.
-- `npm run intake:fixture fixtures/intake/missing-project-name.json -- --summary`
-  - Correctly rejected input.
+Notable corrections from older handoff notes:
 
-### Observed runtime caveats
+- the orchestrator now exists
+- parser internals live under `src/backend/parsing/`, not old `classifiers/`, `extractors/`, `normalizers/`, or `mergers/` paths
+- automated backend tests now exist
+- the backend is wired far enough for end-to-end fixture-driven workflow tests
 
-- PDF extraction emits `pdfjs-dist` font warnings about `LiberationSans-Regular.ttf`.
-- Those warnings did not block fixture execution.
-- Intake no longer adds warnings for inferred package labels or unknown document categories.
+## Important Current Constraints
 
-## What Is Missing Before Real Testing
+### 1. There are richer internal types than the shared workflow summary
 
-### 1. No end-to-end orchestrator exists yet
+The orchestrator currently adapts:
 
-The repo has individual agent modules, but nothing currently:
+- rich parser output into `WorkflowState.parsedSubmittal`
+- reconstructed requirement output into `WorkflowState.requirementSet`
+- comparison output into workflow summary items
 
-- initializes a `WorkflowState`
-- maps intake output into parser input
-- maps parser output into requirement/completeness/comparison input
-- runs the full sequence
-- emits a final workflow result
+That adapter layer is intentional, but it means schema changes in rich agent outputs should be made carefully.
 
-Without that layer, we can only test the intake script directly.
+### 2. LLM-backed paths depend on Anthropic configuration
 
-### 2. The backend contracts currently diverge
+The LLM parser, completeness, comparison, and routing flows rely on:
 
-There are incompatible shapes across modules:
+- `ANTHROPIC_API_KEY`
 
-- `src/backend/agents/requirements.ts`
-  - returns a rich `RequirementSet` with nested `specSection`, structured `requiredAttributes`, and object `routingPolicy`
-- `src/backend/agents/completeness.ts`
-  - expects `RequirementSet` from `src/backend/schemas/workflow.ts`, where `requiredAttributes` is `string[]` and `routingPolicy` is `string`
-- `src/backend/agents/executive.ts`
-  - reads `requirementSet.specSection` as a string
-- `src/backend/agents/parser.ts`
-  - returns `DetailedParsedSubmittal`
-- `src/backend/agents/completeness.ts` and `src/backend/agents/comparison.ts`
-  - expect a simpler `ParsedSubmittal`
+Optional model env vars:
 
-This means the rich parser and rich requirements agent cannot currently plug into the other decision agents without an adapter or schema consolidation.
+- `ANTHROPIC_MODEL`
+- `ANTHROPIC_PARSER_MODEL`
+- `ANTHROPIC_COMPLETENESS_MODEL`
+- `ANTHROPIC_COMPARISON_MODEL`
+- `ANTHROPIC_ROUTING_MODEL`
 
-### 3. TypeScript is not green
+### 3. The frontend is not the center of gravity yet
 
-Current `npx tsc --noEmit` blockers:
-
-- `src/backend/agents/comparison.ts`
-  - type narrowing bug in `normalizeValue`
-- `src/backend/normalizers/submittalFieldExtractor.ts`
-  - uses named regex capture groups while `tsconfig.json` is still targeting `ES2017`
-
-Until these are fixed, `next build` fails during TypeScript validation.
-
-### 4. Build is not clean yet
-
-`npm run build` compiled app code, then failed on TypeScript validation. It also auto-added TypeScript support changes when run:
-
-- added `@types/node`
-- updated `next-env.d.ts`
-- rewrote `tsconfig.json` `jsx`
-- added `.next/dev/types/**/*.ts` to `include`
-
-These changes are now in the working tree.
-
-### 5. No tests exist yet
-
-There are no unit or integration tests for:
-
-- intake normalization
-- PDF extraction edge cases
-- parser classification/extraction
-- requirement reconstruction
-- completeness/comparison/routing/executive branches
-- end-to-end workflow orchestration
+The application shell exists, but most meaningful functionality is still exercised through backend scripts and tests rather than through a user-facing UI.
 
 ## Recommended Next Steps
 
-1. Decide which contract is canonical.
-   - Either keep the simple `workflow.ts` shapes and downgrade the rich agents to match.
-   - Or promote the rich parser/requirements shapes and adapt completeness/comparison/routing/executive to them.
-
-2. Add an orchestrator module.
-   - One function that runs intake -> parse -> requirements -> completeness -> comparison -> routing -> executive.
-   - Return a serializable final workflow object with logs.
-
-3. Make TypeScript pass.
-   - Fix `comparison.ts` narrowing.
-   - Raise `tsconfig.json` target/lib to at least `ES2018`, likely `ES2019` or newer.
-
-4. Add backend tests before UI integration.
-   - Start with fixture-backed integration tests for intake.
-   - Then add unit tests for each agent branch.
-   - Finally add one end-to-end happy path and one exception path.
-
-5. Decide whether the intake path or parser path is the current source of truth.
-   - Right now both exist, and the overlap will confuse the next agent unless one path is declared primary.
-
-## Suggested Starting Point For The Next Agent
-
-If the goal is "ready to start testing," the most leverage comes from:
-
-1. consolidating the workflow schema
-2. creating the orchestrator
-3. getting `npx tsc --noEmit` green
-4. converting the existing fixtures into automated integration tests
-
-After those four steps, the backend will be in a stable enough shape to test intentionally instead of probing disconnected modules.
+1. Keep backend docs aligned with the orchestrator and agent APIs as schemas evolve.
+2. Expand tests around non-happy-path completeness, comparison, and routing scenarios.
+3. Decide whether the future public surface should be a Next.js route, a job runner, or both.
+4. If UI work starts, expose workflow results through a stable backend interface instead of letting the frontend import backend internals directly.

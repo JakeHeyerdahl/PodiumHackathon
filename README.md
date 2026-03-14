@@ -1,36 +1,90 @@
 # PodiumHackathon
 
-Minimal Next.js project scaffold for the hackathon.
+Construction submittal workflow prototype built with Next.js and a backend agent pipeline.
 
-## Scripts
+The frontend is currently minimal. Most of the active work lives in `src/backend`, `scripts/`, `fixtures/`, and `test/`.
 
-- `npm run dev`
-- `npm run build`
-- `npm run start`
-- `npm run lint`
-- `npm run intake:fixture <fixture-path> -- --summary`
-- `npm run requirements:test`
-- `npm run workflow:run <fixture-path>`
-- `npm run workflow:test`
+## What This Repo Does
 
-## Backend Notes
+The backend models a bounded submittal-review workflow:
 
-The backend intake step is intentionally narrow right now:
+1. intake normalizes an uploaded package
+2. parser extracts structured facts from PDFs
+3. requirements reconstruct expected spec and document requirements
+4. completeness decides whether the package is reviewable
+5. comparison evaluates compliance vs requirements
+6. routing picks the next destination
+7. executive makes the final workflow call
 
-- validates that the payload includes at least one usable document
-- extracts `fullText` from PDF documents
-- returns the extracted text without inferring categories, package labels, or submittal metadata
+The main orchestrator lives at `src/backend/orchestrator/runWorkflow.ts`.
 
-The richer workflow behavior starts after intake:
+## Project Layout
 
-- parser extracts structured facts from document text
-- requirements reconstructs the comparison target
-- completeness, comparison, routing, and executive make the downstream workflow decisions
+```text
+src/
+  app/                        Next.js app shell
+  backend/
+    agents/                   workflow steps
+    orchestrator/             end-to-end workflow runner
+    parsing/                  parser internals
+    completeness/             completeness review helpers
+    intake/                   intake normalization and PDF extraction
+    providers/                Anthropic and mock provider abstractions
+    schemas/                  shared workflow and intake types
+    demo/                     deterministic parser fixture access
+scripts/
+  run-*.ts                    local CLI entrypoints
+  generate-parser-fixtures.ts synthetic parser PDF generator
+  fixtures/                   expected parser snapshots and generated PDFs
+fixtures/intake/              intake payload fixtures
+test/                         node:test coverage for agents and orchestrator
+test-pdfs/                    extra real-world parser regression PDFs
+docs/                         current project notes
+```
 
-## React Compiler
+## Common Commands
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `npm run dev` starts the Next.js app.
+- `npm run lint` runs ESLint.
+- `npm run agents:test` runs the full backend test suite.
+- `npm run workflow:test` runs the workflow orchestrator tests.
+- `npm run parser:test` runs deterministic parser tests and snapshot checks.
+- `npm run parser:fixtures` regenerates synthetic parser PDFs.
+- `npm run workflow:run -- fixtures/intake/good-upload.json` runs the full workflow on an intake fixture.
+- `npm run parser:run -- good-submittal` runs the deterministic parser on one synthetic fixture.
+- `npm run parser:run:llm -- good-submittal` runs the LLM parser on one synthetic fixture.
+- `npm run parser:eval:llm` runs parser evals against expected checks.
+- `npm run completeness:run` runs the completeness review script.
+- `npm run comparison:run` runs the comparison script.
 
-## Expanding the ESLint configuration
+## Environment
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Some scripts load `.env.local` automatically through `scripts/load-local-env.ts`.
+
+LLM-backed commands expect:
+
+- `ANTHROPIC_API_KEY`
+
+Optional model overrides:
+
+- `ANTHROPIC_MODEL`
+- `ANTHROPIC_PARSER_MODEL`
+- `ANTHROPIC_COMPLETENESS_MODEL`
+- `ANTHROPIC_COMPARISON_MODEL`
+- `ANTHROPIC_ROUTING_MODEL`
+
+If you only want deterministic parser coverage, you do not need an API key.
+
+## Current State
+
+- The backend orchestrator is implemented and tested.
+- Parser fixtures and snapshots are in place for deterministic coverage.
+- Completeness, comparison, and routing support LLM-backed review flows.
+- The frontend is still a lightweight shell rather than a full product UI.
+
+## Related Docs
+
+- `docs/PARSER_TESTING.md`
+- `docs/SPRINT_AGENT_ORCHESTRATION.md`
+- `docs/AGENT_AUDIT_HANDOFF.md`
+- `src/backend/README.md`

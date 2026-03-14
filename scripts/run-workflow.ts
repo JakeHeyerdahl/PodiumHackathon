@@ -3,8 +3,11 @@ import { promises as fs } from "node:fs";
 
 import { runSubmittalWorkflow } from "../src/backend/orchestrator/runWorkflow";
 import type { UploadIntakePayload } from "../src/backend/schemas/intake";
+import { loadLocalEnv } from "./load-local-env";
 
 async function main() {
+  loadLocalEnv();
+
   const fixtureArg = process.argv[2];
 
   if (!fixtureArg) {

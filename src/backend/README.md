@@ -1,33 +1,22 @@
 # Backend Organization Guide
 
-This document is the source of truth for how backend code should be organized in this repository.
+This document describes how the backend is organized today.
 
-The goal is simple: a senior engineer should be able to open `src/backend`, understand the workflow quickly, and know exactly where new code belongs without tracing a maze of utility folders.
-
-## Mental Model
-
-The backend is organized around the submittal workflow, not around low-level implementation patterns.
-
-Read the code in this order:
+The easiest way to understand the system is to read it in this order:
 
 1. `schemas/`
 2. `agents/`
-3. feature internals such as `intake/` and `parsing/`
-4. `demo/`
-
-That order mirrors how the system should be understood:
-
-1. shared contracts define the shape of the state
-2. agents are the public workflow steps
-3. feature folders contain the implementation details behind those steps
-4. demo fixtures support deterministic testing and sprint demos
+3. `orchestrator/`
+4. feature folders such as `intake/`, `parsing/`, and `completeness/`
+5. `providers/`
+6. `demo/`
 
 ## Directory Layout
 
 ```text
 src/backend/
-  README.md                <- this guide
-  agents/                  <- public workflow steps; start here
+  README.md
+  agents/
     intake.ts
     parser.ts
     requirements.ts
@@ -35,104 +24,46 @@ src/backend/
     comparison.ts
     routing.ts
     executive.ts
-  intake/                  <- intake-only helpers used by the intake agent
+  orchestrator/
+    runWorkflow.ts
+  intake/
     normalize.ts
     extractPdf.ts
-  parsing/                 <- parser-only helpers used by the parser agent
+  parsing/
     classifyDocument.ts
-    extractPdfText.ts
-    extractDocumentFacts.ts
     composeParsedSubmittal.ts
-  schemas/                 <- shared typed contracts
+    extractDocumentFacts.ts
+    extractPdfText.ts
+    reviewWithLlm.ts
+    runLlmParser.ts
+  completeness/
+    reviewWithLlm.ts
+  providers/
+    anthropic.ts
+    index.ts
+    llmProvider.ts
+    mockProvider.ts
+  schemas/
     intake.ts
     workflow.ts
-  demo/                    <- deterministic backend fixtures and demo helpers
+  demo/
     mockSubmittals.ts
 ```
 
-## Ownership Rules
+## Mental Model
 
-### `agents/`
+The backend is organized around workflow steps, with a small amount of adaptation between richer internal types and the shared workflow state.
 
-This folder is the backend's public workflow surface.
+- `schemas/` defines the shared contracts.
+- `agents/` owns the public workflow steps.
+- `orchestrator/` wires the steps together into an end-to-end run.
+- feature folders hold step-specific implementation details.
+- `providers/` abstracts model access.
+- `demo/` exposes deterministic fixture helpers for tests and local runs.
 
-Each file here should represent one step in the orchestration pipeline. If another engineer wants to understand the system, this is where they should spend their first 10 minutes.
+## Workflow Order
 
-Rules:
-
-- Keep one workflow step per file.
-- Export the main entry function for that step.
-- Keep orchestration-facing logic here.
-- Push low-level parsing, extraction, or normalization details into a feature folder.
-
-If a future orchestrator is added, it should call into `agents/*`, not directly into `intake/*` or `parsing/*`.
-
-### `intake/`
-
-This folder contains implementation details for intake only.
-
-Current responsibilities:
-
-- payload validation
-- fixture-backed document preparation
-- raw PDF extraction that returns document `fullText`
-
-Rules:
-
-- Do not put cross-workflow business decisions here.
-- Do not let other workflow stages import deeply from this folder unless they are truly reusing intake behavior.
-- If a helper only exists to support `agents/intake.ts`, it belongs here.
-
-### `parsing/`
-
-This folder contains implementation details for parser-only work.
-
-Current responsibilities:
-
-- PDF text extraction for parser review
-- document classification
-- field and attribute extraction
-- normalized parsed submittal composition
-
-Rules:
-
-- Keep parser helper logic here instead of scattering top-level folders like `classifiers/`, `extractors/`, `normalizers/`, or `mergers/`.
-- Add new parser internals here unless they are genuinely shared across multiple backend domains.
-- Treat `agents/parser.ts` as the only parser entrypoint other backend layers should rely on.
-
-### `schemas/`
-
-This folder owns the backend contracts.
-
-Current split:
-
-- `intake.ts` defines intake payloads and envelope types
-- `workflow.ts` defines parser and workflow state contracts
-
-Rules:
-
-- Shared types belong here, not inside individual agents.
-- If multiple agents need a contract, promote it into `schemas/`.
-- Prefer expanding an existing schema file over creating many tiny type files unless a new domain is truly large.
-
-### `demo/`
-
-This folder owns deterministic demo fixtures and helper functions for exercising the workflow.
-
-Rules:
-
-- Demo helpers should stay deterministic.
-- Keep fixture discovery and fixture metadata here.
-- Do not bury demo-only code inside production workflow modules.
-
-## Current Workflow Shape
-
-Today the backend is best understood as two layers:
-
-1. public workflow agents
-2. feature-specific internals behind those agents
-
-The intended flow is:
+The orchestrated flow is:
 
 1. `agents/intake.ts`
 2. `agents/parser.ts`
@@ -142,99 +73,114 @@ The intended flow is:
 6. `agents/routing.ts`
 7. `agents/executive.ts`
 
-The first two steps already depend on internal feature folders:
+`orchestrator/runWorkflow.ts` is the current end-to-end entrypoint. It:
 
-- intake agent -> `intake/`
-- parser agent -> `parsing/`
+- runs intake against fixture-backed uploads
+- converts accepted PDFs into parser input
+- runs parser, requirements, completeness, comparison, routing, and executive in order
+- stores workflow-facing summaries in `WorkflowState`
+- returns richer intermediate artifacts alongside the final workflow state
 
-The remaining agents are currently more self-contained. If they grow, follow the same pattern:
+## Folder Ownership
 
-- keep the public step in `agents/`
-- place supporting internals in a feature folder named after the domain
+### `agents/`
 
-Examples:
+Public workflow surface area.
 
-- future requirement helpers -> `src/backend/requirements/`
-- future routing policy helpers -> `src/backend/routing/`
-- future executive heuristics -> `src/backend/executive/`
+Rules:
 
-## Where New Code Goes
+- Keep one workflow step per file.
+- Export the main step entrypoint.
+- Keep orchestration-facing decisions here.
+- Push extraction, parsing, or prompt-building details into feature folders.
 
-Use these rules before adding files:
+### `orchestrator/`
 
-- New workflow step: add a file in `agents/`
-- Helper used by only one step: add a feature folder or place it in that step's existing feature folder
-- Shared contract: add it in `schemas/`
-- Demo fixture or deterministic test input: add it in `demo/` or the existing fixture area
-- Script for local verification: keep it in `scripts/`, importing through `agents/*` whenever possible
+End-to-end workflow coordination.
 
-Do not create new top-level backend folders named after implementation mechanics like:
+Rules:
 
-- `utils/`
-- `helpers/`
-- `extractors/`
-- `normalizers/`
-- `mergers/`
+- Own agent sequencing and state transitions.
+- Own adapters between rich internal outputs and workflow-facing summaries.
+- Do not bury feature logic here.
 
-unless the code is truly shared across multiple backend domains and a feature-based home would be misleading.
+### `intake/`
+
+Upload normalization and PDF preparation for intake.
+
+Current responsibilities:
+
+- validating and normalizing upload payloads
+- assigning run IDs and document metadata
+- extracting raw PDF text and warnings during intake
+
+### `parsing/`
+
+Parser-specific internals.
+
+Current responsibilities:
+
+- PDF text extraction for parser review
+- heuristic document classification
+- deterministic fact extraction
+- LLM parser review
+- parsed submittal composition
+
+### `completeness/`
+
+Completeness-review internals.
+
+Current responsibilities:
+
+- LLM-backed completeness review and evidence shaping
+
+### `providers/`
+
+Model-provider abstraction layer.
+
+Current responsibilities:
+
+- selecting Anthropic vs mock provider behavior
+- validating API-key-backed execution paths
+- returning typed structured outputs to agents
+
+### `schemas/`
+
+Shared contracts for the backend.
+
+Current split:
+
+- `intake.ts` contains upload and intake envelope types
+- `workflow.ts` contains workflow-state, parser, completeness, comparison, routing, and executive types
+
+### `demo/`
+
+Deterministic backend fixtures for parser tests and local inspection.
 
 ## Import Direction
 
-Keep imports flowing inward:
+Prefer imports that flow inward:
 
-- scripts and future routes may import from `agents/`
-- `agents/` may import from feature folders and `schemas/`
-- feature folders may import from `schemas/`
+- scripts and tests -> `agents/`, `orchestrator/`, `demo/`
+- `orchestrator/` -> `agents/`, `schemas/`
+- `agents/` -> feature folders, `providers/`, `schemas/`
+- feature folders -> `providers/`, `schemas/`
 
-Avoid the reverse:
+Avoid convenience imports that skip a clearer public entrypoint when one already exists.
 
-- feature folders should not depend on route handlers
-- feature folders should not reach into unrelated feature folders unless there is a clear shared contract
-- scripts should not bypass `agents/` just because a helper function looks convenient
+## Where New Code Goes
 
-## Naming Conventions
+- New workflow step: add a file in `agents/`
+- New end-to-end coordination logic: add it in `orchestrator/`
+- Helper used by one domain only: keep it in that domain folder
+- Shared backend contract: add it in `schemas/`
+- Deterministic test fixture support: add it in `demo/` or `scripts/fixtures/`
+- Local verification CLI: add it in `scripts/`
 
-Use names that describe workflow intent.
+Avoid creating generic mechanic-based top-level folders like `utils/`, `helpers/`, or `normalizers/` unless the code is truly cross-domain and a feature-based home would be misleading.
 
-Prefer:
+## Current Notes
 
-- `runIntakeAgent`
-- `parseSubmittal`
-- `buildRequirementSet`
-- `determineRoutingDecision`
-
-Avoid generic names that hide the domain:
-
-- `processData`
-- `normalize`
-- `merge`
-- `extract`
-
-unless they live inside a clearly named feature folder where the context is already obvious.
-
-## Current Gaps
-
-This backend is still mid-sprint. A few important areas are not fully built yet:
-
-- intake is intentionally minimal and only returns extracted PDF text
-- provider abstractions exist, but the workflow is only partially wired to them
-- no demo API route yet
-- workflow contracts are still evolving between agents
-
-When adding those pieces, preserve this organization:
-
-- orchestrator entrypoints should live in `src/backend/orchestrator/`
-- provider abstractions should live in `src/backend/providers/`
-- API handlers should stay outside `src/backend` and call into backend agents/orchestrator
-
-## Definition Of Clean Backend Structure
-
-The backend is considered organized when:
-
-- a reader can start in `agents/` and understand the workflow order quickly
-- shared contracts are easy to find in `schemas/`
-- feature internals are grouped by domain, not by implementation pattern
-- imports mostly flow from outer layers into inner layers
-- demo and script code do not leak into core workflow modules
-
-If a future agent is unsure where to put code, default to preserving this feature-based structure rather than introducing a new top-level category.
+- The workflow state intentionally keeps a simpler serializable summary than some richer agent outputs.
+- The parser, completeness, comparison, and routing steps all support LLM-backed execution paths.
+- Deterministic parser coverage remains important for regression tests and snapshots.

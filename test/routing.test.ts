@@ -216,35 +216,12 @@ test("runRoutingAgent returns a structured LLM routing decision", async () => {
   assert.match(decision.rationale, /llm confirmed/i);
 });
 
-test("runRoutingAgent falls back to deterministic routing when the LLM path fails", async () => {
-  const decision = await runRoutingAgent({
-    completenessResult: createCompletenessResult({
-      status: "incomplete",
-      isReviewable: false,
-      missingDocuments: ["Warranty"],
-    }),
-    comparisonResult: createComparisonResult(),
-    routingPolicy: {
-      missingDocumentDestination: "return_to_subcontractor",
-    },
-    allowDeterministicFallback: true,
-    llmProvider: new MockLlmProvider({
-      objectHandler: () => {
-        throw new Error("Synthetic LLM failure.");
-      },
-    }),
-  });
-
-  assert.equal(decision.destination, "return_to_subcontractor");
-});
-
-test("runRoutingAgent throws when LLM routing fails and fallback is disabled", async () => {
+test("runRoutingAgent throws when LLM routing fails", async () => {
   await assert.rejects(() =>
     runRoutingAgent({
       completenessResult: createCompletenessResult(),
       comparisonResult: createComparisonResult(),
       routingPolicy: "auto_route_internal_review",
-      allowDeterministicFallback: false,
       llmProvider: new MockLlmProvider({
         objectHandler: () => {
           throw new Error("Synthetic LLM failure.");

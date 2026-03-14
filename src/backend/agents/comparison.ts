@@ -21,6 +21,17 @@ export type ParsedSubmittal = {
   modelNumber?: string | null;
   revision?: string | null;
   extractedAttributes?: Record<string, ComparisonValue>;
+  items?: Array<{
+    itemId: string;
+    label: string;
+    productType?: string | null;
+    specSection?: string | null;
+    manufacturer?: string | null;
+    modelNumber?: string | null;
+    extractedAttributes?: Record<string, ComparisonValue>;
+    supportingDocuments?: string[];
+  }>;
+  supportingDocuments?: string[];
   deviations?: string[];
 };
 
@@ -31,6 +42,17 @@ export type RequirementSet = {
   modelNumber?: string | null;
   revision?: string | null;
   requiredAttributes?: Record<string, ComparisonValue>;
+  requiredItems?: Array<{
+    itemId: string;
+    label: string;
+    productType?: string | null;
+    specSection?: string | null;
+    manufacturer?: string | null;
+    modelNumber?: string | null;
+    requiredAttributes?: Record<string, ComparisonValue>;
+    requiredDocuments?: string[];
+  }>;
+  requiredDocuments?: string[];
 };
 
 export type ComparisonStatus = "compliant" | "deviation_detected" | "unclear";
@@ -242,6 +264,172 @@ function buildComparisonPromptPayload(
   };
 }
 
+function normalizeToken(value: string | null | undefined): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function findMatchingItem(
+  requiredItem: NonNullable<RequirementSet["requiredItems"]>[number],
+  parsedItems: NonNullable<ParsedSubmittal["items"]>,
+) {
+  const requiredTokens = [
+    requiredItem.label,
+    requiredItem.productType,
+    requiredItem.manufacturer,
+    requiredItem.modelNumber,
+    requiredItem.specSection,
+  ]
+    .map(normalizeToken)
+    .filter(Boolean);
+
+  return parsedItems.find((item) => {
+    const haystack = [
+      item.label,
+      item.productType,
+      item.manufacturer,
+      item.modelNumber,
+      item.specSection,
+    ]
+      .map(normalizeToken)
+      .join(" ");
+
+    return requiredTokens.some((token) => haystack.includes(token));
+  });
+}
+
+function compareItemFields(
+  prefix: string,
+  parsedItem: NonNullable<ParsedSubmittal["items"]>[number],
+  requiredItem: NonNullable<RequirementSet["requiredItems"]>[number],
+  matches: ComparisonItem[],
+  mismatches: ComparisonItem[],
+  unclearItems: ComparisonItem[],
+) {
+  const topLevelChecks: Array<{
+    field: "specSection" | "productType" | "manufacturer" | "modelNumber";
+    expected: ComparisonValue;
+    actual: ComparisonValue;
+  }> = [
+    {
+      field: "specSection",
+      expected: requiredItem.specSection,
+      actual: parsedItem.specSection,
+    },
+    {
+      field: "productType",
+      expected: requiredItem.productType,
+      actual: parsedItem.productType,
+    },
+    {
+      field: "manufacturer",
+      expected: requiredItem.manufacturer,
+      actual: parsedItem.manufacturer,
+    },
+    {
+      field: "modelNumber",
+      expected: requiredItem.modelNumber,
+      actual: parsedItem.modelNumber,
+    },
+  ];
+
+  for (const check of topLevelChecks) {
+    if (isBlankValue(check.expected)) {
+      continue;
+    }
+
+    const fieldName = `${prefix}.${check.field}`;
+    if (isBlankValue(check.actual)) {
+      unclearItems.push(
+        buildItem(
+          fieldName,
+          check.expected,
+          check.actual,
+          "Submitted evidence is missing for this required item field.",
+        ),
+      );
+      continue;
+    }
+
+    if (valuesMatch(check.expected, check.actual)) {
+      matches.push(buildItem(fieldName, check.expected, check.actual));
+      continue;
+    }
+
+    mismatches.push(buildItem(fieldName, check.expected, check.actual));
+  }
+
+  const requiredAttributes = requiredItem.requiredAttributes ?? {};
+  const submittedAttributes = parsedItem.extractedAttributes ?? {};
+  for (const field in requiredAttributes) {
+    const expected = requiredAttributes[field];
+    const actual = submittedAttributes[field];
+    const fieldName = `${prefix}.${field}`;
+
+    if (isBlankValue(expected)) {
+      unclearItems.push(
+        buildItem(
+          fieldName,
+          expected,
+          actual,
+          "Requirement value is missing or empty for this item attribute.",
+        ),
+      );
+      continue;
+    }
+
+    if (isBlankValue(actual)) {
+      unclearItems.push(
+        buildItem(
+          fieldName,
+          expected,
+          actual,
+          "Submitted evidence is missing for this required item attribute.",
+        ),
+      );
+      continue;
+    }
+
+    if (valuesMatch(expected, actual)) {
+      matches.push(buildItem(fieldName, expected, actual));
+      continue;
+    }
+
+    mismatches.push(buildItem(fieldName, expected, actual));
+  }
+
+  const requiredDocuments = requiredItem.requiredDocuments ?? [];
+  const supportingDocuments = parsedItem.supportingDocuments ?? [];
+  for (const requiredDocument of requiredDocuments) {
+    const matched = supportingDocuments.some((document) =>
+      normalizeToken(document).includes(normalizeToken(requiredDocument)),
+    );
+
+    if (!matched) {
+      unclearItems.push(
+        buildItem(
+          `${prefix}.requiredDocument.${requiredDocument}`,
+          requiredDocument,
+          null,
+          "Submitted evidence is missing for this required supporting document.",
+        ),
+      );
+    } else {
+      matches.push(
+        buildItem(
+          `${prefix}.requiredDocument.${requiredDocument}`,
+          requiredDocument,
+          requiredDocument,
+        ),
+      );
+    }
+  }
+}
+
 function toStructuredComparisonItem(item: ComparisonItem) {
   return {
     field: item.field,
@@ -333,6 +521,56 @@ export function runTechnicalComparisonAgent(
     );
   }
 
+  const requiredItems = requirementSet.requiredItems ?? [];
+  const parsedItems = parsedSubmittal.items ?? [];
+
+  for (const requiredItem of requiredItems) {
+    const prefix = `item:${requiredItem.itemId}`;
+    const matchedItem = findMatchingItem(requiredItem, parsedItems);
+
+    if (!matchedItem) {
+      unclearItems.push(
+        buildItem(
+          prefix,
+          requiredItem.label,
+          null,
+          "Submitted evidence is missing for this required item.",
+        ),
+      );
+      continue;
+    }
+
+    compareItemFields(prefix, matchedItem, requiredItem, matches, mismatches, unclearItems);
+  }
+
+  const globalRequiredDocuments = requirementSet.requiredDocuments ?? [];
+  const globalSupportingDocuments = parsedSubmittal.supportingDocuments ?? [];
+  for (const requiredDocument of globalRequiredDocuments) {
+    const matched = globalSupportingDocuments.some((document) =>
+      normalizeToken(document).includes(normalizeToken(requiredDocument)),
+    );
+
+    if (!matched) {
+      unclearItems.push(
+        buildItem(
+          `requiredDocument:${requiredDocument}`,
+          requiredDocument,
+          null,
+          "Submitted evidence is missing for this package-level required supporting document.",
+        ),
+      );
+      continue;
+    }
+
+    matches.push(
+      buildItem(
+        `requiredDocument:${requiredDocument}`,
+        requiredDocument,
+        requiredDocument,
+      ),
+    );
+  }
+
   const status: ComparisonStatus =
     mismatches.length > 0 ? "deviation_detected" : unclearItems.length > 0 ? "unclear" : "compliant";
 
@@ -352,48 +590,33 @@ export function runTechnicalComparisonAgent(
 export async function runComparisonAgent(
   input: RunComparisonAgentInput,
 ): Promise<ComparisonResult> {
-  const deterministicResult = runTechnicalComparisonAgent(
-    input.parsedSubmittal,
-    input.requirementSet,
-  );
-  const structuredDeterministicResult =
-    toStructuredComparisonResult(deterministicResult);
   const llmProvider =
     input.llmProvider ??
     createLlmProvider({
       provider: input.provider,
       anthropicApiKey: input.anthropicApiKey,
       anthropicModel: input.anthropicModel,
-      allowMockFallback: input.allowMockFallback,
+      allowMockFallback: false,
     });
 
-  try {
-    const response = await llmProvider.generateObject({
-      instructions:
-        "You are a construction submittal technical comparison agent. Return strict structured JSON and classify evidence conservatively when compliance is uncertain.",
-      input: JSON.stringify(
-        buildComparisonPromptPayload(
-          input.parsedSubmittal,
-          input.requirementSet,
-        ),
+  const response = await llmProvider.generateObject({
+    instructions:
+      "You are a construction submittal technical comparison agent. Return strict structured JSON and classify evidence conservatively when compliance is uncertain.",
+    input: JSON.stringify(
+      buildComparisonPromptPayload(
+        input.parsedSubmittal,
+        input.requirementSet,
       ),
-      schema: comparisonResultSchema,
-      schemaName: "comparison_result",
-      model:
-        input.model ??
-        input.anthropicModel ??
-        process.env.ANTHROPIC_COMPARISON_MODEL ??
-        process.env.ANTHROPIC_MODEL,
-      maxOutputTokens: 1800,
-      fallbackObject: structuredDeterministicResult,
-    });
+    ),
+    schema: comparisonResultSchema,
+    schemaName: "comparison_result",
+    model:
+      input.model ??
+      input.anthropicModel ??
+      process.env.ANTHROPIC_COMPARISON_MODEL ??
+      process.env.ANTHROPIC_MODEL,
+    maxOutputTokens: 1800,
+  });
 
-    return response.object;
-  } catch (error) {
-    if (!input.allowDeterministicFallback) {
-      throw error;
-    }
-
-    return deterministicResult;
-  }
+  return response.object;
 }

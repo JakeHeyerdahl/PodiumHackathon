@@ -2,8 +2,10 @@ import type {
   DetailedParsedSubmittal,
   DocumentFieldName,
   ParsedDocument,
+  ParsedSubmittalItem,
   ParserIssue,
   ParserStatus,
+  ParsedPackageMetadata,
   SourcedValue,
 } from "../schemas/workflow";
 import {
@@ -13,15 +15,21 @@ import {
   dedupeStrings,
   normalizeIssue,
   reviewParserWithLlm,
+  sanitizeSources,
   sortIssues,
   type ExtractedParserDocument,
 } from "./reviewWithLlm";
+import type {
+  CreateLlmProviderOptions,
+  LlmProvider,
+} from "../providers";
 
 export type RunLlmParserInput = {
   documents: ExtractedParserDocument[];
   reviewedAt: string;
   model?: string;
-};
+  llmProvider?: LlmProvider;
+} & CreateLlmProviderOptions;
 
 function determineSummaryStatus(input: {
   overallStatus: ParserStatus;
@@ -60,6 +68,11 @@ export async function runLlmParser({
   documents,
   reviewedAt,
   model,
+  llmProvider,
+  provider,
+  anthropicApiKey,
+  anthropicModel,
+  allowMockFallback,
 }: RunLlmParserInput): Promise<DetailedParsedSubmittal> {
   const usableDocuments = documents.filter(
     ({ parsedDocument, fullText }) =>
@@ -72,6 +85,11 @@ export async function runLlmParser({
   const review = await reviewParserWithLlm({
     documents: usableDocuments,
     model,
+    llmProvider,
+    provider,
+    anthropicApiKey,
+    anthropicModel,
+    allowMockFallback,
   });
 
   const llmIssues = review.issues.map((issue) => normalizeIssue(issue, documentById));
@@ -100,6 +118,37 @@ export async function runLlmParser({
   }));
 
   const extractedAttributes = buildReviewedAttributes(review, documentById);
+  const packageMetadata: ParsedPackageMetadata = {
+    projectName: buildSourcedValue(review.packageMetadata.projectName, documentById),
+    projectNumber: buildSourcedValue(review.packageMetadata.projectNumber, documentById),
+    submittalNumber: buildSourcedValue(review.packageMetadata.submittalNumber, documentById),
+    requirementReference: buildSourcedValue(
+      review.packageMetadata.requirementReference,
+      documentById,
+    ),
+    complianceStatement: buildSourcedValue(
+      review.packageMetadata.complianceStatement,
+      documentById,
+    ),
+  };
+  const items: ParsedSubmittalItem[] = review.items.map((item) => ({
+    itemId: item.itemId,
+    label: buildSourcedValue(item.label, documentById),
+    productType: buildSourcedValue(item.productType, documentById),
+    specSection: buildSourcedValue(item.specSection, documentById),
+    manufacturer: buildSourcedValue(item.manufacturer, documentById),
+    modelNumber: buildSourcedValue(item.modelNumber, documentById),
+    attributes: item.attributes.map((attribute) => ({
+      name: attribute.name,
+      value: attribute.value,
+      confidence: attribute.confidence,
+      sources: sanitizeSources(attribute.sources, documentById),
+    })),
+    requiredDocuments: dedupeStrings(item.requiredDocuments),
+    supportingDocuments: dedupeStrings(item.supportingDocuments),
+    confidence: item.confidence,
+    sources: sanitizeSources(item.sources, documentById),
+  }));
 
   const analysisByDocumentId = new Map(
     review.documentAnalyses.map((analysis) => [analysis.documentId, analysis]),
@@ -139,6 +188,8 @@ export async function runLlmParser({
     ).length;
 
   return {
+    packageMetadata,
+    items,
     specSection: fieldValues.specSection,
     productType: fieldValues.productType,
     manufacturer: fieldValues.manufacturer,
@@ -146,6 +197,8 @@ export async function runLlmParser({
     revision: fieldValues.revision,
     extractedAttributes,
     missingDocuments,
+    requiredDocuments: dedupeStrings(review.requiredDocuments),
+    supportingDocuments: dedupeStrings(review.supportingDocuments),
     deviations,
     documentParses,
     unresolvedFields,

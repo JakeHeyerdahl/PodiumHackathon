@@ -2,21 +2,18 @@
 
 ## Scope
 
-This sprint is **backend and orchestration only**.
+This sprint is focused on backend workflow orchestration for a construction submittal review prototype.
 
-We are explicitly **not** doing any of the following in this sprint:
+Still out of scope:
 
-- frontend work
-- frontend/backend integration
-- real project data integrations
-- auth, security hardening, or permissions
-- production infrastructure
-
-The goal is to build a believable **autonomous submittal workflow engine** for demo use.
+- polished frontend product work
+- production integrations
+- auth and permissions
+- persistent infra and operational hardening
 
 ## Product Goal
 
-Build an executive-led agent system that can autonomously process a construction submittal through a bounded workflow:
+Build a believable autonomous workflow engine that can process a construction submittal through these bounded steps:
 
 1. ingest a submittal event
 2. parse documents into structured facts
@@ -24,381 +21,91 @@ Build an executive-led agent system that can autonomously process a construction
 4. evaluate completeness
 5. compare submission vs requirements
 6. decide routing
-7. make an executive-level workflow decision
-8. emit a final structured state and action plan
+7. make an executive workflow decision
+8. emit structured workflow state plus actionable output
 
-## Demo Goal
+## Current Implementation Status
 
-Given a mock submittal payload, the backend should return a structured workflow result that looks like a real autonomous decision engine:
+The target architecture now exists in code.
 
-- parsed submittal facts
-- requirement set
-- completeness result
-- technical comparison result
-- routing decision
-- executive decision
-- workflow log
+Implemented pieces:
 
-## Non-Goals
+- workflow orchestrator in `src/backend/orchestrator/runWorkflow.ts`
+- workflow-step agents in `src/backend/agents/`
+- shared contracts in `src/backend/schemas/`
+- Anthropic and mock provider abstractions in `src/backend/providers/`
+- deterministic parser fixture generation and snapshots
+- backend tests for parser, comparison, requirements, providers, routing flows, and workflow orchestration
 
-Do not spend sprint time on:
+Still intentionally light:
 
-- UI polish
-- PDF OCR perfection
-- Procore or email integration
-- persistent databases unless needed for state stubbing
-- notification delivery
-- authentication
-- safety/compliance hardening
+- the frontend remains mostly a shell
+- workflow execution is fixture-driven rather than integrated with real systems
+- the final state is structured for demos and tests, not yet for production persistence or APIs
 
 ## System Shape
 
-Use a simple backend architecture:
+The current backend shape is:
 
 - `orchestrator`
-  - drives the workflow
-  - invokes agents in order
-  - owns workflow state
+  - drives the workflow in order
+  - owns state transitions and adapters
 - `agents`
-  - pure backend modules with narrow responsibilities
+  - implement each workflow step
+- `feature folders`
+  - hold parsing, intake, and completeness internals
 - `provider layer`
-  - abstracts model calls
+  - abstracts LLM access
 - `schemas`
-  - typed contracts for every agent input/output
-- `demo API`
-  - one or two endpoints to run the orchestration
+  - define typed state and outputs
+- `scripts` and `tests`
+  - provide local harnesses and regression coverage
+
+## Shared State
+
+`WorkflowState` remains the serializable cross-step summary used by the orchestrator and executive review.
+
+Key fields:
+
+- `runId`
+- `projectName`
+- `submittalTitle`
+- `currentStatus`
+- `incomingDocuments`
+- `parsedSubmittal`
+- `requirementSet`
+- `completenessResult`
+- `comparisonResult`
+- `routingDecision`
+- `executiveDecision`
+- `logs`
+
+Some agents produce richer internal types than the workflow state stores. The orchestrator is the place where those richer outputs are adapted into workflow-facing summaries.
 
 ## Core Design Principles
 
-1. Each agent should do one narrow job.
-2. Agents communicate through shared typed state, not freeform agent-to-agent chat.
-3. The executive agent is the only agent allowed to make the final workflow call.
-4. All outputs should be structured and serializable.
-5. Every agent should write a short trace/log entry into the workflow state.
-6. Everything should be mockable for demo reliability.
-
-## Shared State Contract
-
-Create a single workflow state object that all agents read/write.
-
-Suggested top-level fields:
-
-```ts
-type WorkflowState = {
-  runId: string;
-  projectName: string;
-  submittalTitle: string;
-  currentStatus: string;
-  incomingDocuments: string[];
-  parsedSubmittal?: ParsedSubmittal;
-  requirementSet?: RequirementSet;
-  completenessResult?: CompletenessResult;
-  comparisonResult?: ComparisonResult;
-  routingDecision?: RoutingDecision;
-  executiveDecision?: ExecutiveDecision;
-  logs: WorkflowLogEntry[];
-};
-```
-
-## Agent List
-
-### 1. Intake Agent
-
-Purpose:
-- validate incoming documents and extract raw PDF text for downstream agents
-
-Inputs:
-- project name
-- raw incoming documents
-
-Outputs:
-- accepted or rejected intake result
-- extracted document text for each usable PDF
-- intake log entry
-
-Rules:
-- no business judgment
-- no field extraction, title inference, or document categorization
-- no model required unless we later support fuzzy package grouping
-
-Definition of done:
-- returns stable document IDs and extracted PDF text for downstream parsing
-
-### 2. Parsing Agent
-
-Purpose:
-- convert raw submittal docs into structured attributes
-
-Inputs:
-- `incomingDocuments`
-
-Outputs:
-- `parsedSubmittal`
-
-Expected extracted fields:
-- spec section
-- product type
-- manufacturer
-- model number
-- revision/version
-- extracted attributes
-- missing documents
-- deviations
-
-Definition of done:
-- returns deterministic structured output for a mock submittal payload
-
-### 3. Requirement Reconstruction Agent
-
-Purpose:
-- build a normalized requirement set to compare against
-
-Inputs:
-- project name
-- submittal title
-- parsed submittal
-- mock project requirement context
-
-Outputs:
-- `requirementSet`
-
-Expected requirement fields:
-- spec section
-- required attributes
-- required documents
-- routing policy
-
-Definition of done:
-- returns a comparison-ready requirement object with no frontend dependency
-
-### 4. Completeness Agent
-
-Purpose:
-- decide whether the package is reviewable
-
-Inputs:
-- parsed submittal
-- requirement set
-
-Outputs:
-- `completenessResult`
-
-Possible statuses:
-- `complete`
-- `incomplete`
-- `needs_human_review`
-
-Definition of done:
-- missing documents are clearly listed
-- rationale is concise and structured
-
-### 5. Technical Comparison Agent
-
-Purpose:
-- compare submitted attributes against requirements
-
-Inputs:
-- parsed submittal
-- requirement set
-
-Outputs:
-- `comparisonResult`
-
-Possible statuses:
-- `compliant`
-- `deviation_detected`
-- `unclear`
-
-Definition of done:
-- reports matches, mismatches, and unclear items separately
-
-### 6. Routing Agent
-
-Purpose:
-- determine the next workflow destination before executive review
-
-Inputs:
-- completeness result
-- comparison result
-- routing policy
-
-Outputs:
-- `routingDecision`
-
-Possible destinations:
-- `auto_route_internal_review`
-- `return_to_subcontractor`
-- `human_exception_queue`
-
-Definition of done:
-- always returns a destination and action list
-
-### 7. Executive Agent
-
-Purpose:
-- make the final workflow decision like an accountable operations lead
-
-Inputs:
-- full workflow state
-
-Outputs:
-- `executiveDecision`
-
-Possible decisions:
-- `continue`
-- `return_to_subcontractor`
-- `escalate_to_human`
-- `approve_internal_progression`
-
-Executive behavior:
-- decisive
-- concise
-- operates like an employee making a real call
-- no hedging unless evidence is insufficient
-
-Definition of done:
-- produces a short summary, reasoning bullets, and next actions
-- updates the final workflow status
-
-## Shared Schemas To Implement First
-
-These should be finished before any agent logic expands:
-
-- `ParsedSubmittal`
-- `RequirementSet`
-- `CompletenessResult`
-- `ComparisonResult`
-- `RoutingDecision`
-- `ExecutiveDecision`
-- `WorkflowLogEntry`
-- `WorkflowState`
-
-## Suggested Backend File Layout
-
-This is only a suggestion, but all windows should follow the same shape:
-
-```text
-src/
-  backend/
-    agents/
-      intake.ts
-      parser.ts
-      requirements.ts
-      completeness.ts
-      comparison.ts
-      routing.ts
-      executive.ts
-    orchestrator/
-      runSubmittalWorkflow.ts
-    providers/
-      llmProvider.ts
-      mockProvider.ts
-      anthropicProvider.ts
-    schemas/
-      workflow.ts
-    demo/
-      mockSubmittals.ts
-```
-
-## Parallel Workstreams
-
-These are separated so other context windows can work independently.
-
-### Window A: Shared Contracts
-
-Owns:
-- workflow schemas
-- enums/status values
-- mock input/output fixtures
-
-Must not touch:
-- orchestrator logic
-- API routes
-
-Deliverables:
-- typed schema file
-- one complete mock workflow payload
-
-### Window B: Core Specialist Agents
-
-Owns:
-- parser agent
-- requirement reconstruction agent
-- completeness agent
-- technical comparison agent
-
-Must not touch:
-- executive logic
-- routing policy constants outside agreed schema
-
-Deliverables:
-- pure functions with typed inputs/outputs
-- deterministic mock behavior
-
-### Window C: Decision Layer
-
-Owns:
-- routing agent
-- executive agent
-
-Must not touch:
-- frontend
-- API handlers
-
-Deliverables:
-- final decision contracts
-- deterministic routing and executive decisions
-
-### Window D: Orchestrator + Demo API
-
-Owns:
-- orchestrator runner
-- provider abstraction
-- demo route(s)
-- workflow logging glue
-
-Must not touch:
-- frontend
-- visual components
-
-Deliverables:
-- end-to-end runnable backend flow
-- one route that returns the full workflow state
-
-## Implementation Order
-
-1. Define all schemas and status enums.
-2. Add mock fixtures for one good submittal and one bad submittal.
-3. Implement pure agent functions with mock logic first.
-4. Implement orchestrator sequencing.
-5. Add executive decision pass at the end.
-6. Add provider abstraction for future real model calls.
-7. Add a demo endpoint.
-
-## Minimal Sprint Deliverable
-
-By end of sprint, we should have:
-
-- a backend-only orchestration module
-- a clear executive agent
-- typed state and decision contracts
-- one successful autonomous demo path
-- one failure/return path
-
-## Acceptance Criteria
-
-The sprint is complete when:
-
-1. A demo payload can be submitted to the backend.
-2. The orchestrator runs all agents in order.
-3. The workflow returns a full structured result.
-4. The executive agent makes a final decision.
-5. No frontend files are changed as part of orchestration work after this planning step.
-
-## Notes For All Windows
-
-- Keep logic deterministic where possible.
-- Prefer pure functions over stateful classes unless there is a strong reason.
-- Avoid framework-heavy abstractions at this stage.
-- Use mock providers first so the demo always works.
-- Leave hooks for real LLM/provider integration, but do not block on it.
+1. Each agent owns one narrow workflow responsibility.
+2. Shared state is typed and serializable.
+3. The executive agent is the final workflow decision-maker.
+4. Deterministic fixtures remain available for demo reliability and regression tests.
+5. LLM-backed steps should return structured outputs, not freeform prose.
+6. Logs should make workflow decisions explainable after the fact.
+
+## Current Workflow Order
+
+1. Intake
+2. Parser
+3. Requirements
+4. Completeness
+5. Comparison
+6. Routing
+7. Executive
+
+This order is exercised by `npm run workflow:run` and `npm run workflow:test`.
+
+## Near-Term Priorities
+
+1. Keep schema adapters intentional as parser and requirements outputs evolve.
+2. Expand tests around the LLM-backed completeness, comparison, and routing paths.
+3. Add a cleaner external interface for running the orchestrator outside local scripts.
+4. Decide how much of the rich intermediate data should be exposed to future UI or API consumers.

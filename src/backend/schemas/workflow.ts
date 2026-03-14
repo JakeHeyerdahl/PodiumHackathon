@@ -52,7 +52,7 @@ export type CompletenessRationale = {
 
 export type CompletenessConfidence = "high" | "medium" | "low";
 
-export type CompletenessReviewMode = "llm" | "deterministic_fallback";
+export type CompletenessReviewMode = "llm";
 
 export type CompletenessEvidenceItem = {
   requirementKey: string;
@@ -204,6 +204,28 @@ export type ExtractedAttribute = {
   sources: SourceReference[];
 };
 
+export type ParsedPackageMetadata = {
+  projectName: SourcedValue<string>;
+  projectNumber: SourcedValue<string>;
+  submittalNumber: SourcedValue<string>;
+  requirementReference: SourcedValue<string>;
+  complianceStatement: SourcedValue<string>;
+};
+
+export type ParsedSubmittalItem = {
+  itemId: string;
+  label: SourcedValue<string>;
+  productType: SourcedValue<string>;
+  specSection: SourcedValue<string>;
+  manufacturer: SourcedValue<string>;
+  modelNumber: SourcedValue<string>;
+  attributes: ExtractedAttribute[];
+  requiredDocuments: string[];
+  supportingDocuments: string[];
+  confidence: ParserConfidence;
+  sources: SourceReference[];
+};
+
 export type SourcedValue<T> = {
   value: T | null;
   confidence: ParserConfidence;
@@ -222,6 +244,8 @@ export type ParsedDocument = {
 };
 
 export type DetailedParsedSubmittal = {
+  packageMetadata?: ParsedPackageMetadata;
+  items?: ParsedSubmittalItem[];
   specSection: SourcedValue<string>;
   productType: SourcedValue<string>;
   manufacturer: SourcedValue<string>;
@@ -229,6 +253,8 @@ export type DetailedParsedSubmittal = {
   revision: SourcedValue<string>;
   extractedAttributes: ExtractedAttribute[];
   missingDocuments: string[];
+  requiredDocuments?: string[];
+  supportingDocuments?: string[];
   deviations: ParserIssue[];
   documentParses: ParsedDocument[];
   unresolvedFields: DocumentFieldName[];

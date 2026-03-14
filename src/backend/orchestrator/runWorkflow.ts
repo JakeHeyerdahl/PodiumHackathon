@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { runTechnicalComparisonAgent } from "../agents/comparison";
+import { runComparisonAgent, runTechnicalComparisonAgent } from "../agents/comparison";
 import { runCompletenessAgent } from "../agents/completeness";
 import {
   applyExecutiveDecisionToWorkflowState,
@@ -10,7 +10,7 @@ import {
 import { runIntakeAgent } from "../agents/intake";
 import { parseSubmittal } from "../agents/parser";
 import { buildRequirementSet } from "../agents/requirements";
-import { determineRoutingDecision } from "../agents/routing";
+import { determineRoutingDecision, runRoutingAgent } from "../agents/routing";
 import type {
   DetailedParsedSubmittal,
   IncomingDocument,
@@ -37,7 +37,8 @@ export type WorkflowRunOptions = {
   parserMode?: "llm" | "deterministic";
   parserModel?: string;
   completenessModel?: string;
-  allowDeterministicCompletenessFallback?: boolean;
+  comparisonModel?: string;
+  routingModel?: string;
 };
 
 export type WorkflowRunResult = {
@@ -324,8 +325,9 @@ export async function runSubmittalWorkflow(
 
   const detailedParsedSubmittal = await parseSubmittal(incomingDocuments, {
     reviewedAt,
-    mode: options.parserMode ?? "deterministic",
+    mode: options.parserMode ?? "llm",
     model: options.parserModel,
+    allowDeterministicFallback: true,
   });
   workflowState = {
     ...workflowState,
@@ -364,8 +366,6 @@ export async function runSubmittalWorkflow(
     parsedSubmittal: detailedParsedSubmittal,
     requirementSet: reconstructedRequirementSet,
     model: options.completenessModel,
-    allowDeterministicFallback:
-      options.allowDeterministicCompletenessFallback ?? true,
   });
   workflowState = {
     ...workflowState,
@@ -376,7 +376,7 @@ export async function runSubmittalWorkflow(
       atTimestamp(
         reviewedAt,
         "completeness",
-        `Completeness review returned "${completenessResult.status}" in ${completenessResult.reviewMode ?? "deterministic"} mode.`,
+        `Completeness review returned "${completenessResult.status}" in ${completenessResult.reviewMode ?? "unknown"} mode.`,
       ),
     ],
   };
@@ -385,10 +385,12 @@ export async function runSubmittalWorkflow(
     detailedParsedSubmittal,
     reconstructedRequirementSet,
   );
-  const rawComparisonResult = runTechnicalComparisonAgent(
-    comparisonInputs.parsedSubmittal,
-    comparisonInputs.requirementSet,
-  );
+  const rawComparisonResult = await runComparisonAgent({
+    parsedSubmittal: comparisonInputs.parsedSubmittal,
+    requirementSet: comparisonInputs.requirementSet,
+    model: options.comparisonModel,
+    provider: "anthropic",
+  });
   const comparisonResult = toWorkflowComparisonResult(rawComparisonResult);
   workflowState = {
     ...workflowState,
@@ -404,10 +406,12 @@ export async function runSubmittalWorkflow(
     ],
   };
 
-  const routingDecision = determineRoutingDecision({
+  const routingDecision = await runRoutingAgent({
     completenessResult,
     comparisonResult,
     routingPolicy: reconstructedRequirementSet.routingPolicy,
+    model: options.routingModel,
+    provider: "anthropic",
   });
   workflowState = {
     ...workflowState,

@@ -3,22 +3,17 @@ import {
   listComparisonScenarios,
   type ComparisonScenarioName,
 } from "./comparison-scenarios";
+import { loadLocalEnv } from "./load-local-env";
 import { stableJsonStringify } from "./stable-json";
-import {
-  runComparisonAgent,
-  runTechnicalComparisonAgent,
-} from "../src/backend/agents/comparison";
+import { runComparisonAgent } from "../src/backend/agents/comparison";
+
+loadLocalEnv();
 
 function printUsage(): void {
   console.log("Usage:");
   console.log("  npm run comparison:run -- <scenario-name>");
-  console.log("  npm run comparison:run -- <scenario-name> --deterministic");
   console.log("  npm run comparison:run -- <scenario-name> --provider mock");
   console.log(`Scenarios: ${listComparisonScenarios().join(", ")}`);
-}
-
-function hasFlag(flag: string): boolean {
-  return process.argv.includes(flag);
 }
 
 function readOption(flag: string): string | undefined {
@@ -36,26 +31,19 @@ async function main(): Promise<void> {
   }
 
   const scenario = getComparisonScenario(scenarioName);
-  const deterministicOnly = hasFlag("--deterministic");
   const provider = readOption("--provider");
   const model = readOption("--model");
-  const comparisonResult = deterministicOnly
-    ? runTechnicalComparisonAgent(
-        scenario.parsedSubmittal,
-        scenario.requirementSet,
-      )
-    : await runComparisonAgent({
-        parsedSubmittal: scenario.parsedSubmittal,
-        requirementSet: scenario.requirementSet,
-        provider:
-          provider === "anthropic" || provider === "mock" ? provider : undefined,
-        model,
-        allowDeterministicFallback: true,
-      });
+  const comparisonResult = await runComparisonAgent({
+    parsedSubmittal: scenario.parsedSubmittal,
+    requirementSet: scenario.requirementSet,
+    provider:
+      provider === "anthropic" || provider === "mock" ? provider : undefined,
+    model,
+  });
 
   console.log(`Comparison scenario: ${scenario.name}`);
   console.log(`Description: ${scenario.description}`);
-  console.log(`Mode: ${deterministicOnly ? "deterministic" : "llm"}`);
+  console.log("Mode: llm");
   console.log(`Status: ${comparisonResult.status}`);
   console.log(
     `Summary: ${comparisonResult.summary.matchCount} match(es), ${comparisonResult.summary.mismatchCount} mismatch(es), ${comparisonResult.summary.unclearCount} unclear item(s)`,

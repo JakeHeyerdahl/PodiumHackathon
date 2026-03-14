@@ -18,7 +18,6 @@ type CliOptions = {
   projectName: string;
   submittalTitle?: string;
   model?: string;
-  allowFallback: boolean;
 };
 
 loadEnvConfig(process.cwd());
@@ -31,7 +30,6 @@ function printUsage(): void {
   console.log("  --project <name>            Project name for requirement reconstruction");
   console.log("  --title <title>             Submittal title override");
   console.log("  --model <model>             Override ANTHROPIC_COMPLETENESS_MODEL");
-  console.log("  --allow-fallback            Use deterministic fallback if the LLM call fails");
   console.log(`Fixtures: ${listMockFixtures().join(", ")}`);
 }
 
@@ -50,7 +48,6 @@ function parseOptions(): CliOptions {
     projectName: readOption("--project") ?? "Demo Project",
     submittalTitle: readOption("--title"),
     model: readOption("--model"),
-    allowFallback: hasFlag("--allow-fallback"),
   };
 }
 
@@ -117,7 +114,7 @@ async function main(): Promise<void> {
   }
 
   const parsedSubmittal = await parseSubmittal(documents, {
-    mode: "deterministic",
+    mode: "llm",
   });
   const requirementSet = buildRequirementSet({
     projectName: options.projectName,
@@ -129,7 +126,6 @@ async function main(): Promise<void> {
     parsedSubmittal,
     requirementSet,
     model: options.model,
-    allowDeterministicFallback: options.allowFallback,
   });
 
   console.log(`Completeness fixture: ${label}`);

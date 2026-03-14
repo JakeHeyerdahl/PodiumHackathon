@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import test, { before } from "node:test";
 
 import { generateParserFixtures } from "../scripts/generate-parser-fixtures";
@@ -75,6 +76,58 @@ test("malformed-submittal returns structured document failure", async () => {
       document.issues.some((issue) => issue.code === "pdf_load_failed"),
     ),
   );
+});
+
+test("perfect real-world submittal should not trigger a false deviation", async () => {
+  const parsedSubmittal = await parseSubmittalDeterministic([
+    {
+      documentId: "real-01",
+      fileName: "perfect.pdf",
+      mimeType: "application/pdf",
+      filePath: path.resolve(process.cwd(), "test-pdfs/perfect.pdf"),
+    },
+  ]);
+
+  assert.equal(parsedSubmittal.deviations.length, 0);
+  assert.equal(
+    parsedSubmittal.issues.some((issue) => issue.code === "deviation_detected"),
+    false,
+  );
+});
+
+test("perfect real-world submittal should extract at least one core field", async () => {
+  const parsedSubmittal = await parseSubmittalDeterministic([
+    {
+      documentId: "real-02",
+      fileName: "perfect.pdf",
+      mimeType: "application/pdf",
+      filePath: path.resolve(process.cwd(), "test-pdfs/perfect.pdf"),
+    },
+  ]);
+
+  assert.equal(
+    [
+      parsedSubmittal.specSection.value,
+      parsedSubmittal.productType.value,
+      parsedSubmittal.manufacturer.value,
+      parsedSubmittal.modelNumber.value,
+      parsedSubmittal.revision.value,
+    ].some(Boolean),
+    true,
+  );
+});
+
+test("requirement PDF should not be flagged as a declared deviation", async () => {
+  const parsedSubmittal = await parseSubmittalDeterministic([
+    {
+      documentId: "real-03",
+      fileName: "requirement-1.pdf",
+      mimeType: "application/pdf",
+      filePath: path.resolve(process.cwd(), "test-pdfs/requirement-1.pdf"),
+    },
+  ]);
+
+  assert.equal(parsedSubmittal.deviations.length, 0);
 });
 
 for (const fixtureName of listMockFixtures()) {
