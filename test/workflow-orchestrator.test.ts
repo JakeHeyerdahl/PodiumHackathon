@@ -12,7 +12,7 @@ before(() => {
   loadLocalEnv();
 });
 
-test("perfect.pdf now keeps the parser anchored on the CMU row even though the package still returns for missing shop drawings", async () => {
+test("perfect.pdf now keeps the parser anchored on the CMU row and advances as a complete compliant package", async () => {
   const fixture = getRealSubmittalFixture("perfect");
   const result = await runSubmittalWorkflow(fixture.intakePayload, {
     fixtureRoot: testPdfRoot,
@@ -29,23 +29,23 @@ test("perfect.pdf now keeps the parser anchored on the CMU row even though the p
     "Concrete Masonry Units (CMU)",
   );
   assert.equal(result.workflowState.parsedSubmittal?.manufacturer, "Acme Block Co.");
-  assert.equal(result.workflowState.completenessResult?.status, "incomplete");
+  assert.equal(result.workflowState.completenessResult?.status, "complete");
   assert.equal(
     result.workflowState.routingDecision?.destination,
-    "return_to_subcontractor",
+    "auto_route_internal_review",
   );
   assert.equal(
     result.workflowState.executiveDecision?.decision,
-    "return_to_subcontractor",
+    "approve_internal_progression",
   );
   assert(
     result.workflowState.executiveDecision?.nextActions.includes(
-      "Contact the subcontractor with the return notice and required corrections.",
+      "Advance the package to internal review.",
     ),
   );
 });
 
-test("submittal-1.pdf now resolves the CMU row before completeness returns it for missing shop drawings", async () => {
+test("submittal-1.pdf now resolves the CMU row and advances as a complete compliant package", async () => {
   const fixture = getRealSubmittalFixture("submittal-1");
   const result = await runSubmittalWorkflow(fixture.intakePayload, {
     fixtureRoot: testPdfRoot,
@@ -63,18 +63,18 @@ test("submittal-1.pdf now resolves the CMU row before completeness returns it fo
     "Concrete Masonry Units (CMU)",
   );
   assert.equal(result.workflowState.parsedSubmittal?.manufacturer, "Acme Block Co.");
-  assert.equal(result.workflowState.completenessResult?.status, "incomplete");
+  assert.equal(result.workflowState.completenessResult?.status, "complete");
   assert.equal(
     result.workflowState.routingDecision?.destination,
-    "return_to_subcontractor",
+    "auto_route_internal_review",
   );
   assert.equal(
     result.workflowState.executiveDecision?.decision,
-    "return_to_subcontractor",
+    "approve_internal_progression",
   );
   assert(
     result.workflowState.executiveDecision?.nextActions.includes(
-      "Contact the subcontractor with the return notice and required corrections.",
+      "Advance the package to internal review.",
     ),
   );
 });
