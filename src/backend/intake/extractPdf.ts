@@ -54,8 +54,6 @@ export async function extractPdfDocument(
 
     const fullText = pages.map((page) => page.text).join("\n").trim();
 
-    nextDocument.pageCount = pdf.numPages;
-    nextDocument.pages = pages;
     nextDocument.fullText = fullText;
     nextDocument.extractionStatus = "parsed";
 

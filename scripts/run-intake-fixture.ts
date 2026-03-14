@@ -20,8 +20,8 @@ function printSummary(result: Awaited<ReturnType<typeof runIntakeAgent>>) {
         ? ` | warnings: ${document.warnings.join("; ")}`
         : "";
     console.log(
-      `- ${document.fileName} | ${document.extractionStatus} | pages: ${
-        document.pageCount ?? 0
+      `- ${document.fileName} | ${document.extractionStatus} | chars: ${
+        document.fullText?.length ?? 0
       }${warningSuffix}`,
     );
   }

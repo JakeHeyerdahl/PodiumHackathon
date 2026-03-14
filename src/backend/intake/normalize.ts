@@ -3,7 +3,6 @@ import { createHash, randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 
 import type {
-  DocumentCategoryHint,
   IntakeDocument,
   IntakeEnvelope,
   IntakeResult,
@@ -24,17 +23,6 @@ type NormalizeFailure = {
 
 export type NormalizePayloadResult = NormalizeSuccess | NormalizeFailure;
 
-const CATEGORY_PATTERNS: Array<[DocumentCategoryHint, RegExp]> = [
-  ["cover_sheet", /(cover|transmittal)/i],
-  ["product_data", /(product|cut[\s-_]?sheet|data)/i],
-  ["shop_drawing", /(shop[\s-_]?drawing|drawing)/i],
-  ["certification", /(cert|ul|listing)/i],
-  ["test_report", /(test|report)/i],
-  ["deviation_sheet", /(deviation|substitution|exception)/i],
-  ["schedule", /(schedule)/i],
-  ["spec_excerpt", /(spec|section)/i],
-];
-
 const PDF_MIME_TYPES = new Set(["application/pdf"]);
 const PASS_THROUGH_EXTENSIONS = new Set([
   ".txt",
@@ -45,21 +33,6 @@ const PASS_THROUGH_EXTENSIONS = new Set([
   ".jpeg",
   ".webp",
 ]);
-
-function inferCategory(fileName: string): DocumentCategoryHint {
-  for (const [category, pattern] of CATEGORY_PATTERNS) {
-    if (pattern.test(fileName)) {
-      return category;
-    }
-  }
-
-  return "unknown";
-}
-
-function sanitizePackageLabel(value: string): string {
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : "unnamed-submittal-package";
-}
 
 function buildDocumentId(fileName: string, index: number): string {
   const hash = createHash("sha1")
@@ -91,11 +64,6 @@ async function buildDocument(
     warningMessages.push(`Could not read document at path: ${rawDocument.path}`);
   }
 
-  const categoryHint = rawDocument.categoryHint ?? inferCategory(fileName);
-  if (categoryHint === "unknown") {
-    warningMessages.push(`Unknown document category for ${fileName}.`);
-  }
-
   let extractionStatus: IntakeDocument["extractionStatus"] = "not_started";
   let usable = true;
 
@@ -119,7 +87,6 @@ async function buildDocument(
       extension,
       mimeType,
       byteSize,
-      categoryHint,
       extractionStatus,
       warnings: warningMessages.length > 0 ? [...warningMessages] : undefined,
     },
@@ -193,25 +160,11 @@ export async function normalizeIntakePayload(
     };
   }
 
-  if (!input.submittalTitle || input.submittalTitle.trim().length === 0) {
-    warnings.push("submittalTitle missing; packageLabel was inferred.");
-  }
-
-  const packageLabel = sanitizePackageLabel(
-    input.submittalTitle ??
-      normalizedDocuments.find((document) => document.fileName)?.fileName ??
-      "unnamed-submittal-package",
-  );
-
   const envelope: IntakeEnvelope = {
     runId: randomUUID(),
     sourceType: "upload",
     receivedAt: new Date().toISOString(),
     projectName: input.projectName!.trim(),
-    projectId: input.projectId,
-    submittalTitle: input.submittalTitle,
-    packageLabel,
-    submitter: input.submitter,
     documents: normalizedDocuments,
     warnings,
   };

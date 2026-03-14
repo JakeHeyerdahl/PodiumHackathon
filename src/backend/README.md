@@ -73,9 +73,9 @@ This folder contains implementation details for intake only.
 
 Current responsibilities:
 
-- payload normalization
+- payload validation
 - fixture-backed document preparation
-- raw PDF extraction for intake validation
+- raw PDF extraction that returns document `fullText`
 
 Rules:
 
@@ -216,7 +216,7 @@ unless they live inside a clearly named feature folder where the context is alre
 
 This backend is still mid-sprint. A few important areas are not fully built yet:
 
-- no orchestrator module yet
+- intake is intentionally minimal and only returns extracted PDF text
 - provider abstractions exist, but the workflow is only partially wired to them
 - no demo API route yet
 - workflow contracts are still evolving between agents

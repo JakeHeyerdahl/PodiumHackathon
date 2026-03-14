@@ -105,23 +105,24 @@ type WorkflowState = {
 ### 1. Intake Agent
 
 Purpose:
-- normalize the incoming submittal event into a workflow run
+- validate incoming documents and extract raw PDF text for downstream agents
 
 Inputs:
 - project name
-- submittal title
 - raw incoming documents
 
 Outputs:
-- initialized workflow state
+- accepted or rejected intake result
+- extracted document text for each usable PDF
 - intake log entry
 
 Rules:
 - no business judgment
+- no field extraction, title inference, or document categorization
 - no model required unless we later support fuzzy package grouping
 
 Definition of done:
-- creates a clean workflow run with stable IDs and normalized document list
+- returns stable document IDs and extracted PDF text for downstream parsing
 
 ### 2. Parsing Agent
 

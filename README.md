@@ -8,6 +8,24 @@ Minimal Next.js project scaffold for the hackathon.
 - `npm run build`
 - `npm run start`
 - `npm run lint`
+- `npm run intake:fixture <fixture-path> -- --summary`
+- `npm run requirements:test`
+- `npm run workflow:run <fixture-path>`
+- `npm run workflow:test`
+
+## Backend Notes
+
+The backend intake step is intentionally narrow right now:
+
+- validates that the payload includes at least one usable document
+- extracts `fullText` from PDF documents
+- returns the extracted text without inferring categories, package labels, or submittal metadata
+
+The richer workflow behavior starts after intake:
+
+- parser extracts structured facts from document text
+- requirements reconstructs the comparison target
+- completeness, comparison, routing, and executive make the downstream workflow decisions
 
 ## React Compiler
 

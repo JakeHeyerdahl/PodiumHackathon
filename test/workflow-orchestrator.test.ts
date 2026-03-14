@@ -49,7 +49,7 @@ test("workflow happy path advances a complete compliant package", async () => {
     },
   );
 
-  assert.equal(result.intakeResult.status, "accepted_with_warnings");
+  assert.equal(result.intakeResult.status, "accepted");
   assert.equal(result.workflowState.completenessResult?.status, "complete");
   assert.equal(result.workflowState.comparisonResult?.status, "compliant");
   assert.equal(
@@ -105,7 +105,7 @@ test("workflow exception path escalates a complete package with a declared devia
     },
   );
 
-  assert.equal(result.intakeResult.status, "accepted_with_warnings");
+  assert.equal(result.intakeResult.status, "accepted");
   assert.equal(result.workflowState.completenessResult?.status, "complete");
   assert.equal(
     result.workflowState.comparisonResult?.status,

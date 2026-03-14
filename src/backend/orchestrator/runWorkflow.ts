@@ -262,9 +262,8 @@ function createInitialWorkflowState(
     runId: envelope?.runId ?? `run-${reviewedAt}`,
     projectName: envelope?.projectName ?? payload.projectName ?? "Unknown Project",
     submittalTitle:
-      envelope?.submittalTitle ??
       payload.submittalTitle ??
-      envelope?.packageLabel ??
+      incomingDocuments[0]?.fileName ??
       "Untitled submittal",
     currentStatus:
       intakeResult.status === "rejected" ? "intake_rejected" : "intake_accepted",

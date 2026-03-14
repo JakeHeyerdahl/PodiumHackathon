@@ -25,15 +25,15 @@ These tracks are not wired together into a single end-to-end workflow yet.
 ### Intake pipeline that runs today
 
 - `src/backend/schemas/intake.ts`
-  - Types for upload payloads, intake envelope, normalized documents, and intake results.
+  - Types for upload payloads, intake envelope, extracted documents, and intake results.
 - `src/backend/intake/normalize.ts`
   - Validates payload shape.
-  - Generates `runId`, package label, inferred category hints, document IDs, warnings, and extraction status defaults.
+  - Generates `runId`, document IDs, byte sizes, warnings, and extraction status defaults.
 - `src/backend/intake/extractPdf.ts`
-  - Uses `pdfjs-dist` to parse local fixture PDFs into page text and `fullText`.
+  - Uses `pdfjs-dist` to parse local fixture PDFs into `fullText`.
   - Flags empty or low-text PDFs with warnings.
 - `src/backend/intake/runIntakeAgent.ts`
-  - Orchestrates normalization + PDF extraction.
+  - Orchestrates validation + PDF text extraction.
   - Returns `accepted`, `accepted_with_warnings`, or `rejected`.
 - `scripts/run-intake-fixture.ts`
   - CLI harness for running intake against fixture JSON payloads.
@@ -107,6 +107,7 @@ These tracks are not wired together into a single end-to-end workflow yet.
 
 - PDF extraction emits `pdfjs-dist` font warnings about `LiberationSans-Regular.ttf`.
 - Those warnings did not block fixture execution.
+- Intake no longer adds warnings for inferred package labels or unknown document categories.
 
 ## What Is Missing Before Real Testing
 
